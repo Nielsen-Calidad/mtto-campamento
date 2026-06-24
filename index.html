@@ -410,6 +410,24 @@ textarea{resize:vertical;min-height:68px;line-height:1.55;}
       <option>Finalizada</option>
       <option>Aprobada</option>
     </select>
+    <select class="filter-sel" id="s-mes" onchange="renderTable()">
+      <option value="">Todos los meses</option>
+      <option value="01">Enero</option>
+      <option value="02">Febrero</option>
+      <option value="03">Marzo</option>
+      <option value="04">Abril</option>
+      <option value="05">Mayo</option>
+      <option value="06">Junio</option>
+      <option value="07">Julio</option>
+      <option value="08">Agosto</option>
+      <option value="09">Septiembre</option>
+      <option value="10">Octubre</option>
+      <option value="11">Noviembre</option>
+      <option value="12">Diciembre</option>
+    </select>
+    <select class="filter-sel" id="s-anio" onchange="renderTable()">
+      <option value="">Todos los años</option>
+    </select>
     <div class="tsp"></div>
   </div>
 
@@ -1183,14 +1201,20 @@ function renderTable() {
   const fTipo = document.getElementById('s-tipo')?.value || '';
   const fArea = document.getElementById('s-area')?.value || '';
   const fEst = document.getElementById('s-estado')?.value || '';
+  const fMes = document.getElementById('s-mes')?.value || '';
+  const fAnio = document.getElementById('s-anio')?.value || '';
 
   const filtered = ordenes.filter(os => {
     const txt = [os.numero, os.solicitante, os.area_solicitante, os.area_destino,
                  os.responsable, os.desc_trabajo, os.tipo].join(' ').toLowerCase();
+    const fecha = toInputDate(os.fecha_pedido) || '';
+    const [anioOS, mesOS] = fecha.split('-');
     return (!search || txt.includes(search))
         && (!fTipo || os.tipo === fTipo)
         && (!fArea || os.area_solicitante === fArea || os.area_destino.startsWith(fArea))
-        && (!fEst || os.estado === fEst);
+        && (!fEst || os.estado === fEst)
+        && (!fMes || mesOS === fMes)
+        && (!fAnio || anioOS === fAnio);
   });
 
   const today = new Date(); today.setHours(0,0,0,0);
@@ -1375,7 +1399,17 @@ function filterStatus(s) {
   document.getElementById('s-estado').value = s;
   renderTable();
 }
-function refresh() { renderTable(); renderDashboard(); }
+function populateAnios() {
+  const sel = document.getElementById('s-anio');
+  const current = sel.value;
+  const anios = [...new Set(ordenes
+    .map(o => (toInputDate(o.fecha_pedido) || '').split('-')[0])
+    .filter(a => a && a.length === 4)
+  )].sort((a, b) => b - a);
+  sel.innerHTML = '<option value="">Todos los años</option>'
+    + anios.map(a => `<option value="${a}"${a === current ? ' selected' : ''}>${a}</option>`).join('');
+}
+function refresh() { populateAnios(); renderTable(); renderDashboard(); }
 
 // ════════════════════════════════════════════════════
 // CONFIG
