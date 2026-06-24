@@ -8,47 +8,70 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
 :root {
-  --bg:#0e0d08; --surface:#18160f; --surface2:#201e14; --surface3:#29261a;
-  --border:#342f20; --border2:#47412c;
-  --orange:#e85d25; --orange2:#ff7a42; --orangeD:#c44d1a;
-  --gray:#5c5548; --grayL:#8c8070;
+  --bg:#0b0f1a; --surface:#111827; --surface2:#1a2234; --surface3:#1e2a3d;
+  --border:#1f2d42; --border2:#2a3d57;
+  --orange:#e8621a; --orange2:#ff7a42; --orangeD:#c44d10;
+  --gray:#4a5568; --grayL:#718096;
   --blue:#4a9eff; --green:#22c55e; --danger:#ef4444; --warn:#f59e0b; --purple:#a855f7;
-  --text:#f0ece4; --muted:#7a6e5e; --subtle:#a89f8e;
-  --grad:linear-gradient(135deg,#e85d25 0%,#ff7a42 100%);
+  --text:#e2e8f0; --muted:#64748b; --subtle:#94a3b8;
+  --grad:linear-gradient(135deg,#e8621a 0%,#ff7a42 100%);
+  --sidebar-w:220px;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
-body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:0;opacity:.4;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;display:flex;}
 
-/* HEADER */
-header{background:linear-gradient(90deg,#18160f 0%,#211d10 60%,#1a1508 100%);border-bottom:2px solid var(--orange);padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:68px;position:sticky;top:0;z-index:200;box-shadow:0 2px 32px rgba(232,93,37,.18);}
-.logo{display:flex;align-items:center;gap:16px;}
-.logo-badge{background:var(--grad);color:#fff;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:4px;padding:5px 14px;border-radius:6px;box-shadow:0 0 20px rgba(232,93,37,.4);}
-.logo-sep{width:1px;height:34px;background:var(--border2);}
-.logo-title{font-family:'Bebas Neue',sans-serif;font-size:19px;letter-spacing:3px;color:var(--text);line-height:1;}
-.logo-sub{font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-top:3px;}
-.header-right{display:flex;align-items:center;gap:12px;}
-.hbadge{padding:4px 12px;border-radius:6px;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;background:rgba(232,93,37,.15);border:1px solid rgba(232,93,37,.4);color:#ff7a42;}
-.sync-dot{width:8px;height:8px;border-radius:50%;background:var(--muted);display:inline-block;margin-right:6px;transition:background .3s;}
+/* SIDEBAR */
+.sidebar{width:var(--sidebar-w);min-height:100vh;background:#0d1321;border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;z-index:300;}
+.sb-logo{padding:22px 18px 18px;border-bottom:1px solid var(--border);}
+.sb-logo-img{display:flex;align-items:center;gap:11px;}
+.sb-logo-icon{width:44px;height:44px;background:var(--grad);border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:17px;color:#fff;letter-spacing:2px;box-shadow:0 0 20px rgba(232,98,26,.4);flex-shrink:0;}
+.sb-logo-text{line-height:1.15;}
+.sb-logo-name{font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:3px;color:var(--text);}
+.sb-logo-sub{font-size:9px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-top:2px;}
+.sb-nav{flex:1;padding:14px 0;overflow-y:auto;}
+.sb-section-label{font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);padding:14px 18px 5px;}
+.sb-item{display:flex;align-items:center;gap:11px;padding:9px 18px;cursor:pointer;color:var(--muted);font-size:12px;font-weight:500;transition:all .18s;border-left:3px solid transparent;user-select:none;}
+.sb-item:hover{color:var(--text);background:rgba(255,255,255,.03);}
+.sb-item.active{color:var(--orange2);background:rgba(232,98,26,.09);border-left-color:var(--orange);}
+.sb-item-icon{font-size:14px;width:20px;text-align:center;flex-shrink:0;}
+.sb-item-label{flex:1;}
+.sb-count{font-family:'JetBrains Mono',monospace;font-size:9.5px;background:rgba(232,98,26,.15);color:var(--orange2);padding:1px 6px;border-radius:10px;border:1px solid rgba(232,98,26,.2);}
+.sb-item.active .sb-count{background:rgba(232,98,26,.28);}
+.sb-footer{padding:14px 18px;border-top:1px solid var(--border);}
+.sb-sync{display:flex;align-items:center;gap:8px;}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:var(--muted);flex-shrink:0;transition:background .3s;}
 .sync-dot.ok{background:var(--green);box-shadow:0 0 6px var(--green);}
 .sync-dot.err{background:var(--danger);box-shadow:0 0 6px var(--danger);}
 .sync-dot.syncing{background:var(--warn);box-shadow:0 0 6px var(--warn);animation:pulse 1s infinite;}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-.sync-label{font-size:11px;color:var(--muted);}
+.sync-label{font-size:10px;color:var(--muted);line-height:1.35;}
 
-/* NAV */
-nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 32px;display:flex;overflow-x:auto;gap:0;position:sticky;top:68px;z-index:199;}
-.nav-btn{background:none;border:none;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:700;padding:13px 18px;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;transition:all .2s;letter-spacing:.5px;text-transform:uppercase;}
-.nav-btn:hover{color:var(--text);}
-.nav-btn.active{color:var(--orange);border-bottom-color:var(--orange);}
-.nav-count{display:inline-block;margin-left:6px;font-family:'JetBrains Mono',monospace;font-size:10px;background:var(--surface3);padding:1px 6px;border-radius:10px;color:var(--subtle);}
-.nav-btn.active .nav-count{background:rgba(232,93,37,.2);color:var(--orange2);}
+/* CONTENT WRAP */
+.content-wrap{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;min-height:100vh;}
+
+/* TOPBAR */
+.topbar{background:#0d1321;border-bottom:1px solid var(--border);padding:0 28px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;box-shadow:0 1px 24px rgba(0,0,0,.35);}
+.topbar-left{display:flex;align-items:center;gap:10px;}
+.topbar-section{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;color:var(--text);}
+.topbar-sep{color:var(--border2);font-size:18px;margin:0 2px;}
+.topbar-sub{font-size:11px;color:var(--muted);letter-spacing:.4px;}
+.topbar-right{display:flex;align-items:center;gap:12px;}
+.topbar-badge{padding:4px 12px;border-radius:6px;font-size:11px;font-weight:700;letter-spacing:.5px;background:rgba(232,98,26,.12);border:1px solid rgba(232,98,26,.3);color:var(--orange2);}
+.topbar-date{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);white-space:nowrap;}
 
 /* MAIN */
-main{padding:24px 32px;max-width:1600px;margin:0 auto;position:relative;z-index:1;}
+main{padding:22px 28px;flex:1;position:relative;z-index:1;}
 .section{display:none;animation:fadeIn .25s ease;}
 .section.active{display:block;}
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* PERIOD BAR */
+.period-bar{display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap;}
+.period-bar-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);}
+.period-bar .filter-sel{width:auto;min-width:140px;}
+
+/* TOPBAR OVERFLOW FIX */
+.topbar-sub{font-size:11px;color:var(--muted);letter-spacing:.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:300px;}
 
 /* PAGE HDR */
 .page-hdr{margin-bottom:22px;display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:12px;}
@@ -245,65 +268,105 @@ textarea{resize:vertical;min-height:68px;line-height:1.55;}
 </head>
 <body>
 
-<!-- HEADER -->
-<header>
-  <div class="logo">
-    <div class="logo-badge">NIELSEN</div>
-    <div class="logo-sep"></div>
-    <div>
-      <div class="logo-title">Gestión de Mantenimiento</div>
-      <div class="logo-sub">Órdenes de Servicio · PO-MTTO-005</div>
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sb-logo">
+    <div class="sb-logo-img">
+      <div class="sb-logo-icon">NE</div>
+      <div class="sb-logo-text">
+        <div class="sb-logo-name">NIELSEN</div>
+        <div class="sb-logo-sub">Expediciones S.A.</div>
+      </div>
     </div>
   </div>
-  <div class="header-right">
-    <span class="sync-dot" id="sync-dot"></span>
-    <span class="sync-label" id="sync-label">Conectando...</span>
-    <span class="hbadge">OS v1.0</span>
+  <nav class="sb-nav">
+    <div class="sb-section-label">Principal</div>
+    <div class="sb-item active" id="nav-dashboard" onclick="showSection('dashboard')">
+      <span class="sb-item-icon">▦</span>
+      <span class="sb-item-label">Dashboard</span>
+    </div>
+    <div class="sb-section-label">Órdenes de Servicio</div>
+    <div class="sb-item" id="nav-todas" onclick="showSection('ordenes');resetFilters()">
+      <span class="sb-item-icon">☰</span>
+      <span class="sb-item-label">Todas las OS</span>
+      <span class="sb-count" id="nc-all">0</span>
+    </div>
+    <div class="sb-item" id="nav-pendientes" onclick="showSection('ordenes');filterStatus('Pendiente')">
+      <span class="sb-item-icon">⏳</span>
+      <span class="sb-item-label">Pendientes</span>
+      <span class="sb-count" id="nc-pend">0</span>
+    </div>
+    <div class="sb-item" id="nav-ejecucion" onclick="showSection('ordenes');filterStatus('En ejecución')">
+      <span class="sb-item-icon">⚙</span>
+      <span class="sb-item-label">En ejecución</span>
+      <span class="sb-count" id="nc-ejec">0</span>
+    </div>
+    <div class="sb-item" id="nav-finalizadas" onclick="showSection('ordenes');filterStatus('Finalizada')">
+      <span class="sb-item-icon">✓</span>
+      <span class="sb-item-label">Finalizadas</span>
+      <span class="sb-count" id="nc-fin">0</span>
+    </div>
+    <div class="sb-item" id="nav-aprobadas" onclick="showSection('ordenes');filterStatus('Aprobada')">
+      <span class="sb-item-icon">✅</span>
+      <span class="sb-item-label">Aprobadas</span>
+      <span class="sb-count" id="nc-apro">0</span>
+    </div>
+    <div class="sb-section-label">Sistema</div>
+    <div class="sb-item" id="nav-config" onclick="showSection('config')">
+      <span class="sb-item-icon">⚙</span>
+      <span class="sb-item-label">Configuración</span>
+    </div>
+  </nav>
+  <div class="sb-footer">
+    <div class="sb-sync">
+      <span class="sync-dot" id="sync-dot"></span>
+      <span class="sync-label" id="sync-label">Conectando...</span>
+    </div>
+  </div>
+</aside>
+
+<!-- CONTENT WRAP -->
+<div class="content-wrap">
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <div class="topbar-left">
+    <span class="topbar-section" id="topbar-section">DASHBOARD</span>
+    <span class="topbar-sep">|</span>
+    <span class="topbar-sub" id="topbar-sub">Resumen ejecutivo · R-MTTO-010</span>
+  </div>
+  <div class="topbar-right">
+    <span class="topbar-date" id="topbar-date"></span>
+    <span class="topbar-badge">OS v1.0</span>
+    <button class="btn btn-primary" onclick="openNewOS()" style="height:30px;font-size:11px;">＋ Nueva OS</button>
   </div>
 </header>
-
-<!-- NAV -->
-<nav>
-  <button class="nav-btn active" onclick="showSection('dashboard')">📊 Dashboard</button>
-  <button class="nav-btn" onclick="showSection('ordenes')">📋 Todas las OS <span class="nav-count" id="nc-all">0</span></button>
-  <button class="nav-btn" onclick="showSection('ordenes');filterStatus('Pendiente')">⏳ Pendientes <span class="nav-count" id="nc-pend">0</span></button>
-  <button class="nav-btn" onclick="showSection('ordenes');filterStatus('En ejecución')">🔧 En ejecución <span class="nav-count" id="nc-ejec">0</span></button>
-  <button class="nav-btn" onclick="showSection('ordenes');filterStatus('Finalizada')">✓ Finalizadas <span class="nav-count" id="nc-fin">0</span></button>
-  <button class="nav-btn" onclick="showSection('ordenes');filterStatus('Aprobada')">✅ Aprobadas <span class="nav-count" id="nc-apro">0</span></button>
-  <button class="nav-btn" onclick="showSection('config')">⚙ Configuración</button>
-</nav>
 
 <main>
 
 <!-- ═══ DASHBOARD ═══ -->
 <div class="section active" id="sec-dashboard">
-  <div class="page-hdr">
-    <div>
-      <h1>DASHBOARD <span>MTTO</span></h1>
-      <p>Resumen ejecutivo · Órdenes de Servicio · R-MTTO-010</p>
-    </div>
-    <div class="page-hdr-actions">
-      <select class="filter-sel" id="d-mes" onchange="renderDashboard()">
-        <option value="">Todos los meses</option>
-        <option value="01">Enero</option>
-        <option value="02">Febrero</option>
-        <option value="03">Marzo</option>
-        <option value="04">Abril</option>
-        <option value="05">Mayo</option>
-        <option value="06">Junio</option>
-        <option value="07">Julio</option>
-        <option value="08">Agosto</option>
-        <option value="09">Septiembre</option>
-        <option value="10">Octubre</option>
-        <option value="11">Noviembre</option>
-        <option value="12">Diciembre</option>
-      </select>
-      <select class="filter-sel" id="d-anio" onchange="renderDashboard()">
-        <option value="">Todos los años</option>
-      </select>
-      <button class="btn btn-ghost" onclick="loadData()">↺ Actualizar</button>
-      <button class="btn btn-primary" onclick="openNewOS()">＋ Nueva OS</button>
-    </div>
+  <div class="period-bar">
+    <div class="period-bar-label">Período</div>
+    <select class="filter-sel" id="d-mes" onchange="renderDashboard()">
+      <option value="">Todos los meses</option>
+      <option value="01">Enero</option>
+      <option value="02">Febrero</option>
+      <option value="03">Marzo</option>
+      <option value="04">Abril</option>
+      <option value="05">Mayo</option>
+      <option value="06">Junio</option>
+      <option value="07">Julio</option>
+      <option value="08">Agosto</option>
+      <option value="09">Septiembre</option>
+      <option value="10">Octubre</option>
+      <option value="11">Noviembre</option>
+      <option value="12">Diciembre</option>
+    </select>
+    <select class="filter-sel" id="d-anio" onchange="renderDashboard()">
+      <option value="">Todos los años</option>
+    </select>
+    <button class="btn btn-ghost btn-sm" onclick="loadData()" style="height:32px;">↺ Actualizar</button>
   </div>
 
   <div class="sec-title">Indicadores generales</div>
@@ -1203,7 +1266,8 @@ function printOS() {
       <td style="width:34%"><span class="label">FIRMA Y ACLARACIÓN<br>RESPONSABLE MTTO</span><div class="sig-area"></div></td>
     </tr>
   </table>
-  </body></html>`;
+  </div>
+</body></html>`;
 
   const w = window.open('', '_blank');
   w.document.write(html);
@@ -1476,13 +1540,36 @@ function copyScript() {
 // ════════════════════════════════════════════════════
 // SECTION NAV
 // ════════════════════════════════════════════════════
+const SECTION_LABELS = { dashboard:'DASHBOARD', ordenes:'ÓRDENES DE SERVICIO', config:'CONFIGURACIÓN' };
+const SECTION_SUBS = { dashboard:'Resumen ejecutivo · R-MTTO-010', ordenes:'Seguimiento completo · PO-MTTO-005-01', config:'Integración con Google Sheets' };
 function showSection(id) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.sb-item').forEach(b => b.classList.remove('active'));
   document.getElementById('sec-'+id)?.classList.add('active');
-  const idx = ['dashboard','ordenes','ordenes','ordenes','ordenes','config'].indexOf(id);
-  document.querySelectorAll('.nav-btn')[idx >= 0 ? idx : 0]?.classList.add('active');
+  const navMap = { dashboard:'nav-dashboard', ordenes:'nav-todas', config:'nav-config' };
+  if (navMap[id]) document.getElementById(navMap[id])?.classList.add('active');
+  const lbl = document.getElementById('topbar-section');
+  if (lbl) lbl.textContent = SECTION_LABELS[id] || '';
+  const sub = document.getElementById('topbar-sub');
+  if (sub) sub.textContent = SECTION_SUBS[id] || '';
 }
+function resetFilters() {
+  ['s-search','s-tipo','s-area','s-estado','s-mes','s-anio'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.tagName === 'INPUT' ? el.value = '' : el.selectedIndex = 0;
+  });
+  renderTable();
+}
+function updateClock() {
+  const el = document.getElementById('topbar-date');
+  if (!el) return;
+  const now = new Date();
+  el.textContent = now.toLocaleDateString('es-AR',{day:'2-digit',month:'short',year:'numeric'})
+    + ' · ' + now.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+}
+setInterval(updateClock, 1000);
+updateClock();
 
 // ════════════════════════════════════════════════════
 // EXPORT CSV
@@ -1511,5 +1598,6 @@ function exportCSV() {
 document.getElementById('cfg-url').value = G_URL;
 setTimeout(loadData, 200);
 </script>
+</div>
 </body>
 </html>
