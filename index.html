@@ -55,7 +55,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .topbar-section{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;color:var(--text);}
 .topbar-sep{color:var(--border2);font-size:18px;margin:0 2px;}
 .topbar-sub{font-size:11px;color:var(--muted);letter-spacing:.4px;}
-.topbar-right{display:flex;align-items:center;gap:12px;}
+.topbar-right{display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.topbar-left{flex:1;min-width:0;display:flex;align-items:center;gap:10px;overflow:hidden;}
 .topbar-badge{padding:4px 12px;border-radius:6px;font-size:11px;font-weight:700;letter-spacing:.5px;background:rgba(232,98,26,.12);border:1px solid rgba(232,98,26,.3);color:var(--orange2);}
 .topbar-date{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);white-space:nowrap;}
 
@@ -593,28 +594,76 @@ textarea{resize:vertical;min-height:68px;line-height:1.55;}
       4. Pegá esa URL en el campo de arriba.
     </p>
     <div style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:14px 16px;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--subtle);line-height:1.8;overflow-x:auto;white-space:pre;">
-const SHEET_NAME = "OS";
+const SHEET_NAME  = "OS";
+const USERS_SHEET = "Usuarios";
 
-function doGet(e) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet()
-                  .getSheetByName(SHEET_NAME);
+// ── Utilidad: hoja a array de objetos ──
+function sheetToObjects(sheet) {
   const data = sheet.getDataRange().getValues();
+  if (data.length < 2) return [];
   const headers = data[0];
-  const rows = data.slice(1).map(row => {
+  return data.slice(1).map(row => {
     const obj = {};
     headers.forEach((h, i) => obj[h] = row[i]);
     return obj;
   });
+}
+
+// ── Hoja Usuarios: inicializar si no existe ──
+function getOrCreateUsersSheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(USERS_SHEET);
+  if (!sheet) {
+    sheet = ss.insertSheet(USERS_SHEET);
+    const cols = ["id","username","password","name","role","area"];
+    sheet.getRange(1,1,1,cols.length).setValues([cols]);
+    const defaults = [
+      ["u1","admin",       "Nielsen2025!","Administrador","admin",       "Administracion"],
+      ["u2","responsable", "Mtto2025!",   "Resp. MTTO",   "responsable", "Mantenimiento"],
+      ["u3","tecnico",     "Tec2025!",    "Tecnico",      "tecnico",     "Taller Metalurgico"],
+      ["u4","solicitante", "Sol2025!",    "Solicitante",  "solicitante", "Campamento"]
+    ];
+    sheet.getRange(2,1,defaults.length,cols.length).setValues(defaults);
+  }
+  return sheet;
+}
+
+function doGet(e) {
+  const action = e && e.parameter && e.parameter.action;
+
+  // ── GET usuarios ──
+  if (action === "getUsers") {
+    const sheet = getOrCreateUsersSheet();
+    return ContentService
+      .createTextOutput(JSON.stringify(sheetToObjects(sheet)))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // ── GET órdenes (default) ──
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
   return ContentService
-    .createTextOutput(JSON.stringify(rows))
+    .createTextOutput(JSON.stringify(sheetToObjects(sheet)))
     .setMimeType(ContentService.MimeType.JSON);
 }
 
 function doPost(e) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet()
-                  .getSheetByName(SHEET_NAME);
   const body = JSON.parse(e.postData.contents);
-  
+
+  // ── Guardar usuarios ──
+  if (body.action === "saveUsers") {
+    const sheet = getOrCreateUsersSheet();
+    const cols  = ["id","username","password","name","role","area"];
+    sheet.clearContents();
+    sheet.getRange(1,1,1,cols.length).setValues([cols]);
+    if (body.users && body.users.length) {
+      const rows = body.users.map(u => cols.map(c => u[c] || ""));
+      sheet.getRange(2,1,rows.length,cols.length).setValues(rows);
+    }
+    return ContentService.createTextOutput("ok");
+  }
+
+  // ── OS: eliminar ──
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
   if (body.action === "delete") {
     const data = sheet.getDataRange().getValues();
     for (let i = 1; i < data.length; i++) {
@@ -622,26 +671,23 @@ function doPost(e) {
     }
     return ContentService.createTextOutput("ok");
   }
-  
-  const headers = sheet.getRange(1,1,1,sheet.getLastColumn()).getValues()[0];
-  
-  // Si no hay encabezados, crear
+
+  // ── OS: crear / actualizar ──
+  let headers = sheet.getLastColumn() > 0
+    ? sheet.getRange(1,1,1,sheet.getLastColumn()).getValues()[0]
+    : [];
   if (!headers[0]) {
     const cols = ["id","numero","fecha_pedido","tipo","solicitante","area_solicitante",
       "responsable","area_destino","plazo","fecha_inicio","fecha_fin","duracion_hs",
-      "desc_trabajo","trabajo_realizado",
-      "observaciones","materiales","mano_obra","estado","obs_final"];
+      "desc_trabajo","trabajo_realizado","observaciones","materiales","mano_obra","estado","obs_final"];
     sheet.getRange(1,1,1,cols.length).setValues([cols]);
+    headers = cols;
   }
-  
   const data = sheet.getDataRange().getValues();
-  const hdrs = data[0];
-  const row = hdrs.map(h => body[h] !== undefined ? body[h] : "");
-  
-  // Buscar si existe para actualizar
+  const row  = headers.map(h => body[h] !== undefined ? body[h] : "");
   for (let i = 1; i < data.length; i++) {
     if (data[i][0] == body.id) {
-      sheet.getRange(i+1, 1, 1, row.length).setValues([row]);
+      sheet.getRange(i+1,1,1,row.length).setValues([row]);
       return ContentService.createTextOutput("updated");
     }
   }
@@ -1767,30 +1813,59 @@ function can(action) {
   const u = currentUser();
   return u && CAN[action] && CAN[action].includes(u.role);
 }
-const USERS_KEY = 'nielsen_users_v1';
-function getUsers() {
-  const stored = localStorage.getItem(USERS_KEY);
-  if (stored) return JSON.parse(stored);
-  const defaults = [
-    { id:'u1', username:'admin',       password:'Nielsen2025!', name:'Administrador',    role:'admin',       area:'Administracion' },
-    { id:'u2', username:'responsable', password:'Mtto2025!',    name:'Resp. MTTO',       role:'responsable', area:'Mantenimiento'  },
-    { id:'u3', username:'tecnico',     password:'Tec2025!',     name:'Tecnico',          role:'tecnico',     area:'Taller Metalurgico' },
-    { id:'u4', username:'solicitante', password:'Sol2025!',     name:'Solicitante',      role:'solicitante', area:'Campamento'     }
-  ];
-  localStorage.setItem(USERS_KEY, JSON.stringify(defaults));
-  return defaults;
-}
-function saveUsers(users) { localStorage.setItem(USERS_KEY, JSON.stringify(users)); }
-const SESSION_KEY = 'nielsen_session_v1';
+// ── Caché de usuarios en sessionStorage ──
+const SESSION_KEY  = 'nielsen_session_v1';
+const USERS_CACHE  = 'nielsen_users_cache_v1';
+const DEFAULT_USERS = [
+  { id:'u1', username:'admin',       password:'Nielsen2025!', name:'Administrador',  role:'admin',       area:'Administracion' },
+  { id:'u2', username:'responsable', password:'Mtto2025!',    name:'Resp. MTTO',     role:'responsable', area:'Mantenimiento'  },
+  { id:'u3', username:'tecnico',     password:'Tec2025!',     name:'Tecnico',        role:'tecnico',     area:'Taller Metalurgico' },
+  { id:'u4', username:'solicitante', password:'Sol2025!',     name:'Solicitante',    role:'solicitante', area:'Campamento'     }
+];
+
 function currentUser() { try { return JSON.parse(sessionStorage.getItem(SESSION_KEY)); } catch(e) { return null; } }
 function setSession(u) { sessionStorage.setItem(SESSION_KEY, JSON.stringify({id:u.id,username:u.username,name:u.name,role:u.role,area:u.area})); }
-function clearSession() { sessionStorage.removeItem(SESSION_KEY); }
+function clearSession() { sessionStorage.removeItem(SESSION_KEY); sessionStorage.removeItem(USERS_CACHE); }
 
-function doLogin() {
-  const uVal = (document.getElementById('login-user')?.value||'').trim().toLowerCase();
-  const pVal = document.getElementById('login-pass')?.value||'';
-  const err  = document.getElementById('login-error');
-  const found = getUsers().find(u => u.username.toLowerCase()===uVal && u.password===pVal);
+// Obtiene usuarios: Sheets → caché → defaults
+async function getUsers() {
+  const cached = sessionStorage.getItem(USERS_CACHE);
+  if (cached) { try { return JSON.parse(cached); } catch(e){} }
+  if (!G_URL) return DEFAULT_USERS;
+  try {
+    const res  = await fetch(G_URL + '?action=getUsers');
+    const data = await res.json();
+    if (Array.isArray(data) && data.length) {
+      sessionStorage.setItem(USERS_CACHE, JSON.stringify(data));
+      return data;
+    }
+  } catch(e) {}
+  return DEFAULT_USERS;
+}
+
+// Guarda usuarios: caché + Sheets
+async function saveUsers(users) {
+  sessionStorage.setItem(USERS_CACHE, JSON.stringify(users));
+  if (!G_URL) return;
+  try {
+    await fetch(G_URL, {
+      method:'POST', mode:'no-cors',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ action:'saveUsers', users })
+    });
+  } catch(e) { console.warn('No se pudo sincronizar usuarios con Sheets:', e); }
+}
+
+// ── Login / Logout ──
+async function doLogin() {
+  const uVal  = (document.getElementById('login-user')?.value||'').trim().toLowerCase();
+  const pVal  = document.getElementById('login-pass')?.value||'';
+  const err   = document.getElementById('login-error');
+  const btn   = document.querySelector('.login-btn');
+  btn.textContent = 'Verificando...'; btn.disabled = true;
+  const users = await getUsers();
+  btn.textContent = 'INGRESAR'; btn.disabled = false;
+  const found = users.find(u => u.username.toLowerCase()===uVal && u.password===pVal);
   if (!found) { err.classList.add('show'); return; }
   err.classList.remove('show');
   setSession(found);
@@ -1822,7 +1897,6 @@ function applyFormRole() {
   const hasSol=can('editSolicitud'), hasExec=can('editEjecucion');
   document.querySelectorAll('#ostab-0 input:not(#f-numero), #ostab-0 select, #ostab-0 textarea').forEach(el=>{ el.disabled=!hasSol; });
   document.querySelectorAll('#ostab-1 input, #ostab-1 select, #ostab-1 textarea, #ostab-2 input, #ostab-2 select, #ostab-2 textarea').forEach(el=>{ el.disabled=!hasExec; });
-  // Hide tabs user can't access
   const tabs=document.querySelectorAll('#modal-os .tab');
   if(tabs[0]) tabs[0].style.opacity=hasSol?'1':'.35';
   if(tabs[1]) tabs[1].style.opacity=hasExec?'1':'.35';
@@ -1842,9 +1916,11 @@ function guardedNewOS() {
   openNewOS();
 }
 
-function renderUsersTable() {
+async function renderUsersTable() {
   const tbody=document.getElementById('users-tbody'); if(!tbody) return;
-  tbody.innerHTML=getUsers().map(u=>{
+  tbody.innerHTML='<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:14px">Cargando...</td></tr>';
+  const users = await getUsers();
+  tbody.innerHTML=users.map(u=>{
     const r=ROLES[u.role]||{};
     return '<tr><td><span class="mono">'+u.username+'</span></td><td>'+u.name+'</td>'
       +'<td><span class="role-tag '+r.cls+'">'+r.label+'</span></td>'
@@ -1855,47 +1931,52 @@ function renderUsersTable() {
       +'</td></tr>';
   }).join('');
 }
-function deleteUser(id) {
+async function deleteUser(id) {
   if(!can('manageUsers')) return;
   if(!confirm('Eliminar este usuario?')) return;
-  saveUsers(getUsers().filter(u=>u.id!==id)); renderUsersTable();
+  const users = await getUsers();
+  await saveUsers(users.filter(u=>u.id!==id));
+  renderUsersTable();
 }
-function editUser(id) {
-  const u=getUsers().find(x=>x.id===id); if(!u) return;
+async function editUser(id) {
+  const users = await getUsers();
+  const u=users.find(x=>x.id===id); if(!u) return;
   document.getElementById('uf-id').value=u.id;
   document.getElementById('uf-username').value=u.username;
   document.getElementById('uf-name').value=u.name;
   document.getElementById('uf-role').value=u.role;
   document.getElementById('uf-area').value=u.area;
   document.getElementById('uf-pass').value='';
-  document.getElementById('uf-pass').placeholder='Dejar vacio para no cambiar';
+  document.getElementById('uf-pass').placeholder='Dejar vacío para no cambiar';
   document.getElementById('user-modal-title').textContent='EDITAR USUARIO';
   document.getElementById('modal-user').classList.add('open');
 }
 function openNewUser() {
   ['uf-id','uf-username','uf-name','uf-area','uf-pass'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   document.getElementById('uf-role').value='solicitante';
-  document.getElementById('uf-pass').placeholder='Contrasena';
+  document.getElementById('uf-pass').placeholder='Contraseña';
   document.getElementById('user-modal-title').textContent='NUEVO USUARIO';
   document.getElementById('modal-user').classList.add('open');
 }
-function saveUser() {
-  const id=document.getElementById('uf-id').value;
-  const username=document.getElementById('uf-username').value.trim().toLowerCase();
-  const name=document.getElementById('uf-name').value.trim();
-  const role=document.getElementById('uf-role').value;
-  const area=document.getElementById('uf-area').value.trim();
-  const pass=document.getElementById('uf-pass').value;
+async function saveUser() {
+  const id       = document.getElementById('uf-id').value;
+  const username = document.getElementById('uf-username').value.trim().toLowerCase();
+  const name     = document.getElementById('uf-name').value.trim();
+  const role     = document.getElementById('uf-role').value;
+  const area     = document.getElementById('uf-area').value.trim();
+  const pass     = document.getElementById('uf-pass').value;
   if(!username||!name){alert('Usuario y nombre son obligatorios.');return;}
-  let users=getUsers();
+  let users = await getUsers();
   if(id){
     users=users.map(u=>u.id===id?{...u,username,name,role,area,...(pass?{password:pass}:{})}:u);
   } else {
-    if(!pass){alert('La contrasena es obligatoria para usuarios nuevos.');return;}
+    if(!pass){alert('La contraseña es obligatoria para usuarios nuevos.');return;}
     if(users.find(u=>u.username===username)){alert('Ese nombre de usuario ya existe.');return;}
     users.push({id:'u'+Date.now(),username,name,role,area,password:pass});
   }
-  saveUsers(users); renderUsersTable(); closeModal('modal-user');
+  await saveUsers(users);
+  renderUsersTable();
+  closeModal('modal-user');
 }
 
 // ════════════════════════════════════════════════════
