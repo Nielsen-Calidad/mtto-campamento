@@ -64,6 +64,38 @@ main{padding:22px 28px;flex:1;position:relative;z-index:1;}
 .section{display:none;animation:fadeIn .25s ease;}
 .section.active{display:block;}
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+/* ── LOGIN ── */
+.login-screen{position:fixed;inset:0;background:#0b0f1a;z-index:1000;display:flex;align-items:center;justify-content:center;}
+.login-screen.hidden{display:none;}
+.login-card{background:#111827;border:1px solid #1f2d42;border-radius:16px;padding:40px 44px;width:100%;max-width:400px;box-shadow:0 24px 64px rgba(0,0,0,.6);}
+.login-logo{display:flex;align-items:center;gap:14px;margin-bottom:32px;}
+.login-logo-icon{width:52px;height:52px;background:linear-gradient(135deg,#e8621a,#ff7a42);border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:20px;color:#fff;letter-spacing:2px;box-shadow:0 0 24px rgba(232,98,26,.4);}
+.login-logo-text{}
+.login-logo-name{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;color:#e2e8f0;}
+.login-logo-sub{font-size:10px;color:#64748b;letter-spacing:1.5px;text-transform:uppercase;margin-top:2px;}
+.login-title{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:3px;color:#e2e8f0;margin-bottom:4px;}
+.login-sub{font-size:11.5px;color:#64748b;margin-bottom:26px;}
+.login-field{margin-bottom:14px;}
+.login-field label{display:block;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#64748b;margin-bottom:5px;}
+.login-field input{width:100%;padding:10px 13px;background:#1a2234;border:1px solid #1f2d42;border-radius:8px;font-size:13px;color:#e2e8f0;outline:none;font-family:'DM Sans',sans-serif;transition:border-color .15s;}
+.login-field input:focus{border-color:#2a3d57;}
+.login-btn{width:100%;height:42px;background:linear-gradient(135deg,#e8621a,#ff7a42);border:none;border-radius:8px;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;color:#fff;cursor:pointer;margin-top:8px;transition:opacity .15s;box-shadow:0 4px 16px rgba(232,98,26,.35);}
+.login-btn:hover{opacity:.9;}
+.login-error{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:10px 13px;font-size:12px;color:#ef4444;margin-top:12px;display:none;}
+.login-error.show{display:block;}
+
+/* ── USER CHIP IN TOPBAR ── */
+.user-chip{display:flex;align-items:center;gap:8px;background:#1a2234;border:1px solid #1f2d42;border-radius:8px;padding:5px 12px;cursor:pointer;transition:background .15s;}
+.user-chip:hover{background:#1e2a3d;}
+.user-avatar{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#e8621a,#ff7a42);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:12px;color:#fff;flex-shrink:0;}
+.user-name{font-size:11.5px;font-weight:600;color:#e2e8f0;}
+.user-role-badge{font-size:9px;font-weight:700;letter-spacing:.5px;color:#64748b;text-transform:uppercase;}
+.role-tag{display:inline-block;padding:2px 7px;border-radius:10px;font-size:9.5px;font-weight:700;letter-spacing:.3px;}
+.role-admin{background:rgba(168,85,247,.15);color:#a855f7;border:1px solid rgba(168,85,247,.3);}
+.role-responsable{background:rgba(232,98,26,.15);color:#ff7a42;border:1px solid rgba(232,98,26,.3);}
+.role-tecnico{background:rgba(74,158,255,.15);color:#4a9eff;border:1px solid rgba(74,158,255,.3);}
+.role-solicitante{background:rgba(34,197,94,.15);color:#22c55e;border:1px solid rgba(34,197,94,.3);}
+
 
 /* PERIOD BAR */
 .period-bar{display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap;}
@@ -618,6 +650,31 @@ function doPost(e) {
 }</div>
     <button class="btn btn-ghost" style="margin-top:10px;font-size:11px;" onclick="copyScript()">📋 Copiar código</button>
   </div>
+
+  <div id="users-panel" style="display:none">
+    <div class="sec-title" style="margin-top:28px">Gestión de usuarios</div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <div class="card-title" style="margin-bottom:0">Usuarios del sistema</div>
+        <button class="btn btn-primary btn-sm" onclick="openNewUser()">＋ Nuevo usuario</button>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Usuario</th><th>Nombre</th><th>Rol</th><th>Área</th><th></th></tr></thead>
+          <tbody id="users-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="config-panel" style="margin-top:16px">
+      <h3>🔐 Credenciales por defecto</h3>
+      <p style="font-size:12px;color:var(--subtle);line-height:1.7;">
+        Los usuarios iniciales son: <strong>admin / Nielsen2025!</strong> · <strong>responsable / Mtto2025!</strong> · <strong>tecnico / Tec2025!</strong> · <strong>solicitante / Sol2025!</strong><br>
+        Se recomienda cambiar las contraseñas desde el panel de usuarios antes de usar en producción.
+      </p>
+    </div>
+  </div>
+
 </div>
 
 </main>
@@ -1085,6 +1142,7 @@ function openNewOS() {
   document.getElementById('mos-sub').textContent = 'Completar los datos requeridos — PO-MTTO-005';
   document.getElementById('f-fecha-pedido').value = new Date().toISOString().slice(0,10);
   switchOSTab(0);
+  applyFormRole();
   document.getElementById('modal-os').classList.add('open');
 }
 function openEdit(id) {
@@ -1095,6 +1153,7 @@ function openEdit(id) {
   document.getElementById('mos-title').textContent = 'EDITAR ORDEN DE SERVICIO';
   document.getElementById('mos-sub').textContent = os.numero;
   switchOSTab(0);
+  applyFormRole();
   document.getElementById('modal-os').classList.add('open');
 }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
@@ -1266,7 +1325,100 @@ function printOS() {
       <td style="width:34%"><span class="label">FIRMA Y ACLARACIÓN<br>RESPONSABLE MTTO</span><div class="sig-area"></div></td>
     </tr>
   </table>
+  
+<!-- ═══ LOGIN SCREEN ═══ -->
+<div class="login-screen" id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-icon">NE</div>
+      <div class="login-logo-text">
+        <div class="login-logo-name">NIELSEN</div>
+        <div class="login-logo-sub">Expediciones S.A.</div>
+      </div>
+    </div>
+    <div class="login-title">Iniciar sesión</div>
+    <div class="login-sub">Sistema de Gestión de Mantenimiento · PO-MTTO-005</div>
+    <div class="login-field">
+      <label>Usuario</label>
+      <input type="text" id="login-user" placeholder="Ingresá tu usuario" autocomplete="username">
+    </div>
+    <div class="login-field">
+      <label>Contraseña</label>
+      <input type="password" id="login-pass" placeholder="Ingresá tu contraseña" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="login-btn" onclick="doLogin()">INGRESAR</button>
+    <div class="login-error" id="login-error">Usuario o contraseña incorrectos.</div>
   </div>
+</div>
+
+
+<!-- ═══ MODAL USUARIO ═══ -->
+<div class="modal-overlay" id="modal-user">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-hdr">
+      <div class="modal-icon">👤</div>
+      <div><div class="modal-title" id="user-modal-title">NUEVO USUARIO</div><div class="modal-sub">Gestión de acceso al sistema</div></div>
+      <button class="modal-close" onclick="closeModal('modal-user')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="uf-id">
+      <div class="fg fg2">
+        <div class="ff">
+          <label>Usuario <span class="req">*</span></label>
+          <input type="text" id="uf-username" placeholder="nombre.apellido" autocomplete="off">
+        </div>
+        <div class="ff">
+          <label>Contraseña <span class="req">*</span></label>
+          <input type="password" id="uf-pass" placeholder="Contraseña" autocomplete="new-password">
+        </div>
+        <div class="ff">
+          <label>Nombre completo <span class="req">*</span></label>
+          <input type="text" id="uf-name" placeholder="Nombre y apellido">
+        </div>
+        <div class="ff">
+          <label>Área</label>
+          <input type="text" id="uf-area" placeholder="Ej: Campamento">
+        </div>
+        <div class="ff s2">
+          <label>Rol <span class="req">*</span></label>
+          <select id="uf-role">
+            <option value="admin">Administrador</option>
+            <option value="responsable">Responsable MTTO</option>
+            <option value="tecnico">Técnico</option>
+            <option value="solicitante" selected>Solicitante</option>
+          </select>
+        </div>
+      </div>
+      <div class="info-box" style="margin-top:14px">
+        <div class="info-box-title">Permisos por rol</div>
+        <p><strong>Administrador:</strong> acceso total + gestión de usuarios y configuración.<br>
+        <strong>Responsable MTTO:</strong> crear, editar, aprobar y eliminar OS.<br>
+        <strong>Técnico:</strong> ver OS y registrar ejecución (trabajo, materiales, mano de obra).<br>
+        <strong>Solicitante:</strong> solo puede crear nuevas OS y consultar el estado.</p>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-user')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveUser()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ LOGOUT CONFIRM ═══ -->
+<div class="modal-overlay" id="modal-logout">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-hdr">
+      <div class="modal-icon">🔒</div>
+      <div><div class="modal-title">CERRAR SESIÓN</div><div class="modal-sub">¿Confirmás que querés salir?</div></div>
+      <button class="modal-close" onclick="closeModal('modal-logout')">✕</button>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-logout')">Cancelar</button>
+      <button class="btn btn-primary" onclick="doLogout()">Cerrar sesión</button>
+    </div>
+  </div>
+</div>
+</div>
 </body></html>`;
 
   const w = window.open('', '_blank');
@@ -1321,8 +1473,8 @@ function renderTable() {
       <td style="font-size:11px;color:${overdue?'var(--danger)':'var(--muted)'}">${os.plazo||'—'}</td>
       <td>${sbadge(os.estado)}</td>
       <td onclick="event.stopPropagation()" style="white-space:nowrap">
-        <button class="btn btn-ghost btn-sm" onclick="openEdit('${os.id}')">✏</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteOS('${os.id}')">✕</button>
+        <button class="btn btn-ghost btn-sm" onclick="guardedOpenEdit('${os.id}')">✏</button>
+        <button class="btn btn-danger btn-sm" onclick="guardedDelete('${os.id}')">✕</button>
       </td>
     </tr>`;
   }).join('');
@@ -1543,11 +1695,13 @@ function copyScript() {
 const SECTION_LABELS = { dashboard:'DASHBOARD', ordenes:'ÓRDENES DE SERVICIO', config:'CONFIGURACIÓN' };
 const SECTION_SUBS = { dashboard:'Resumen ejecutivo · R-MTTO-010', ordenes:'Seguimiento completo · PO-MTTO-005-01', config:'Integración con Google Sheets' };
 function showSection(id) {
+  if (id === 'config' && !can('config')) { alert('No tenes permisos para acceder a la configuracion.'); return; }
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.sb-item').forEach(b => b.classList.remove('active'));
   document.getElementById('sec-'+id)?.classList.add('active');
   const navMap = { dashboard:'nav-dashboard', ordenes:'nav-todas', config:'nav-config' };
   if (navMap[id]) document.getElementById(navMap[id])?.classList.add('active');
+  if (id === 'config') renderUsersTable();
   const lbl = document.getElementById('topbar-section');
   if (lbl) lbl.textContent = SECTION_LABELS[id] || '';
   const sub = document.getElementById('topbar-sub');
@@ -1593,11 +1747,262 @@ function exportCSV() {
 }
 
 // ════════════════════════════════════════════════════
+// AUTH & ROLES
+// ════════════════════════════════════════════════════
+const ROLES = {
+  admin:        { label: 'Administrador',    cls: 'role-admin' },
+  responsable:  { label: 'Responsable MTTO', cls: 'role-responsable' },
+  tecnico:      { label: 'Técnico',          cls: 'role-tecnico' },
+  solicitante:  { label: 'Solicitante',      cls: 'role-solicitante' }
+};
+const CAN = {
+  createOS:      ['admin','responsable','solicitante'],
+  editSolicitud: ['admin','responsable'],
+  editEjecucion: ['admin','responsable','tecnico'],
+  deleteOS:      ['admin','responsable'],
+  config:        ['admin'],
+  manageUsers:   ['admin']
+};
+function can(action) {
+  const u = currentUser();
+  return u && CAN[action] && CAN[action].includes(u.role);
+}
+const USERS_KEY = 'nielsen_users_v1';
+function getUsers() {
+  const stored = localStorage.getItem(USERS_KEY);
+  if (stored) return JSON.parse(stored);
+  const defaults = [
+    { id:'u1', username:'admin',       password:'Nielsen2025!', name:'Administrador',    role:'admin',       area:'Administracion' },
+    { id:'u2', username:'responsable', password:'Mtto2025!',    name:'Resp. MTTO',       role:'responsable', area:'Mantenimiento'  },
+    { id:'u3', username:'tecnico',     password:'Tec2025!',     name:'Tecnico',          role:'tecnico',     area:'Taller Metalurgico' },
+    { id:'u4', username:'solicitante', password:'Sol2025!',     name:'Solicitante',      role:'solicitante', area:'Campamento'     }
+  ];
+  localStorage.setItem(USERS_KEY, JSON.stringify(defaults));
+  return defaults;
+}
+function saveUsers(users) { localStorage.setItem(USERS_KEY, JSON.stringify(users)); }
+const SESSION_KEY = 'nielsen_session_v1';
+function currentUser() { try { return JSON.parse(sessionStorage.getItem(SESSION_KEY)); } catch(e) { return null; } }
+function setSession(u) { sessionStorage.setItem(SESSION_KEY, JSON.stringify({id:u.id,username:u.username,name:u.name,role:u.role,area:u.area})); }
+function clearSession() { sessionStorage.removeItem(SESSION_KEY); }
+
+function doLogin() {
+  const uVal = (document.getElementById('login-user')?.value||'').trim().toLowerCase();
+  const pVal = document.getElementById('login-pass')?.value||'';
+  const err  = document.getElementById('login-error');
+  const found = getUsers().find(u => u.username.toLowerCase()===uVal && u.password===pVal);
+  if (!found) { err.classList.add('show'); return; }
+  err.classList.remove('show');
+  setSession(found);
+  document.getElementById('login-screen').classList.add('hidden');
+  applyRole();
+  loadData();
+}
+function doLogout() { clearSession(); closeModal('modal-logout'); showLoginScreen(); }
+function showLoginScreen() {
+  document.getElementById('login-screen').classList.remove('hidden');
+  document.getElementById('login-user').value='';
+  document.getElementById('login-pass').value='';
+  document.getElementById('login-error').classList.remove('show');
+}
+
+function applyRole() {
+  const u = currentUser(); if (!u) return;
+  const role = ROLES[u.role]||ROLES.solicitante;
+  const chip=document.getElementById('user-chip'); if(chip) chip.style.display='flex';
+  const av=document.getElementById('user-avatar'); if(av) av.textContent=u.name.slice(0,2).toUpperCase();
+  const nd=document.getElementById('user-name-display'); if(nd) nd.textContent=u.name;
+  const rd=document.getElementById('user-role-display'); if(rd) rd.innerHTML='<span class="role-tag '+role.cls+'">'+role.label+'</span>';
+  const btnOS=document.getElementById('btn-nueva-os'); if(btnOS) btnOS.style.display=can('createOS')?'':'none';
+  const navCfg=document.getElementById('nav-config'); if(navCfg) navCfg.style.display=can('config')?'':'none';
+  const usersPanel=document.getElementById('users-panel'); if(usersPanel) usersPanel.style.display=can('manageUsers')?'':'none';
+}
+
+function applyFormRole() {
+  const hasSol=can('editSolicitud'), hasExec=can('editEjecucion');
+  document.querySelectorAll('#ostab-0 input:not(#f-numero), #ostab-0 select, #ostab-0 textarea').forEach(el=>{ el.disabled=!hasSol; });
+  document.querySelectorAll('#ostab-1 input, #ostab-1 select, #ostab-1 textarea, #ostab-2 input, #ostab-2 select, #ostab-2 textarea').forEach(el=>{ el.disabled=!hasExec; });
+  // Hide tabs user can't access
+  const tabs=document.querySelectorAll('#modal-os .tab');
+  if(tabs[0]) tabs[0].style.opacity=hasSol?'1':'.35';
+  if(tabs[1]) tabs[1].style.opacity=hasExec?'1':'.35';
+  if(tabs[2]) tabs[2].style.opacity=hasExec?'1':'.35';
+}
+
+function guardedOpenEdit(id) {
+  if (!can('editSolicitud') && !can('editEjecucion')) { alert('No tenes permisos para editar ordenes de servicio.'); return; }
+  openEdit(id);
+}
+function guardedDelete(id) {
+  if (!can('deleteOS')) { alert('No tenes permisos para eliminar ordenes de servicio.'); return; }
+  deleteOS(id);
+}
+function guardedNewOS() {
+  if (!can('createOS')) { alert('No tenes permisos para crear ordenes de servicio.'); return; }
+  openNewOS();
+}
+
+function renderUsersTable() {
+  const tbody=document.getElementById('users-tbody'); if(!tbody) return;
+  tbody.innerHTML=getUsers().map(u=>{
+    const r=ROLES[u.role]||{};
+    return '<tr><td><span class="mono">'+u.username+'</span></td><td>'+u.name+'</td>'
+      +'<td><span class="role-tag '+r.cls+'">'+r.label+'</span></td>'
+      +'<td style="color:var(--muted)">'+u.area+'</td>'
+      +'<td onclick="event.stopPropagation()" style="white-space:nowrap">'
+      +'<button class="btn btn-ghost btn-sm" onclick="editUser(\''+u.id+'\')">✏</button>'
+      +(u.id!=='u1'?'<button class="btn btn-danger btn-sm" onclick="deleteUser(\''+u.id+'\')">✕</button>':'')
+      +'</td></tr>';
+  }).join('');
+}
+function deleteUser(id) {
+  if(!can('manageUsers')) return;
+  if(!confirm('Eliminar este usuario?')) return;
+  saveUsers(getUsers().filter(u=>u.id!==id)); renderUsersTable();
+}
+function editUser(id) {
+  const u=getUsers().find(x=>x.id===id); if(!u) return;
+  document.getElementById('uf-id').value=u.id;
+  document.getElementById('uf-username').value=u.username;
+  document.getElementById('uf-name').value=u.name;
+  document.getElementById('uf-role').value=u.role;
+  document.getElementById('uf-area').value=u.area;
+  document.getElementById('uf-pass').value='';
+  document.getElementById('uf-pass').placeholder='Dejar vacio para no cambiar';
+  document.getElementById('user-modal-title').textContent='EDITAR USUARIO';
+  document.getElementById('modal-user').classList.add('open');
+}
+function openNewUser() {
+  ['uf-id','uf-username','uf-name','uf-area','uf-pass'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('uf-role').value='solicitante';
+  document.getElementById('uf-pass').placeholder='Contrasena';
+  document.getElementById('user-modal-title').textContent='NUEVO USUARIO';
+  document.getElementById('modal-user').classList.add('open');
+}
+function saveUser() {
+  const id=document.getElementById('uf-id').value;
+  const username=document.getElementById('uf-username').value.trim().toLowerCase();
+  const name=document.getElementById('uf-name').value.trim();
+  const role=document.getElementById('uf-role').value;
+  const area=document.getElementById('uf-area').value.trim();
+  const pass=document.getElementById('uf-pass').value;
+  if(!username||!name){alert('Usuario y nombre son obligatorios.');return;}
+  let users=getUsers();
+  if(id){
+    users=users.map(u=>u.id===id?{...u,username,name,role,area,...(pass?{password:pass}:{})}:u);
+  } else {
+    if(!pass){alert('La contrasena es obligatoria para usuarios nuevos.');return;}
+    if(users.find(u=>u.username===username)){alert('Ese nombre de usuario ya existe.');return;}
+    users.push({id:'u'+Date.now(),username,name,role,area,password:pass});
+  }
+  saveUsers(users); renderUsersTable(); closeModal('modal-user');
+}
+
+// ════════════════════════════════════════════════════
 // INIT
 // ════════════════════════════════════════════════════
 document.getElementById('cfg-url').value = G_URL;
-setTimeout(loadData, 200);
+if (currentUser()) {
+  document.getElementById('login-screen').classList.add('hidden');
+  applyRole();
+  setTimeout(loadData, 200);
+} else {
+  showLoginScreen();
+}
 </script>
+
+<!-- ═══ LOGIN SCREEN ═══ -->
+<div class="login-screen" id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-icon">NE</div>
+      <div class="login-logo-text">
+        <div class="login-logo-name">NIELSEN</div>
+        <div class="login-logo-sub">Expediciones S.A.</div>
+      </div>
+    </div>
+    <div class="login-title">Iniciar sesión</div>
+    <div class="login-sub">Sistema de Gestión de Mantenimiento · PO-MTTO-005</div>
+    <div class="login-field">
+      <label>Usuario</label>
+      <input type="text" id="login-user" placeholder="Ingresá tu usuario" autocomplete="username">
+    </div>
+    <div class="login-field">
+      <label>Contraseña</label>
+      <input type="password" id="login-pass" placeholder="Ingresá tu contraseña" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="login-btn" onclick="doLogin()">INGRESAR</button>
+    <div class="login-error" id="login-error">Usuario o contraseña incorrectos.</div>
+  </div>
+</div>
+
+
+<!-- ═══ MODAL USUARIO ═══ -->
+<div class="modal-overlay" id="modal-user">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-hdr">
+      <div class="modal-icon">👤</div>
+      <div><div class="modal-title" id="user-modal-title">NUEVO USUARIO</div><div class="modal-sub">Gestión de acceso al sistema</div></div>
+      <button class="modal-close" onclick="closeModal('modal-user')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="uf-id">
+      <div class="fg fg2">
+        <div class="ff">
+          <label>Usuario <span class="req">*</span></label>
+          <input type="text" id="uf-username" placeholder="nombre.apellido" autocomplete="off">
+        </div>
+        <div class="ff">
+          <label>Contraseña <span class="req">*</span></label>
+          <input type="password" id="uf-pass" placeholder="Contraseña" autocomplete="new-password">
+        </div>
+        <div class="ff">
+          <label>Nombre completo <span class="req">*</span></label>
+          <input type="text" id="uf-name" placeholder="Nombre y apellido">
+        </div>
+        <div class="ff">
+          <label>Área</label>
+          <input type="text" id="uf-area" placeholder="Ej: Campamento">
+        </div>
+        <div class="ff s2">
+          <label>Rol <span class="req">*</span></label>
+          <select id="uf-role">
+            <option value="admin">Administrador</option>
+            <option value="responsable">Responsable MTTO</option>
+            <option value="tecnico">Técnico</option>
+            <option value="solicitante" selected>Solicitante</option>
+          </select>
+        </div>
+      </div>
+      <div class="info-box" style="margin-top:14px">
+        <div class="info-box-title">Permisos por rol</div>
+        <p><strong>Administrador:</strong> acceso total + gestión de usuarios y configuración.<br>
+        <strong>Responsable MTTO:</strong> crear, editar, aprobar y eliminar OS.<br>
+        <strong>Técnico:</strong> ver OS y registrar ejecución (trabajo, materiales, mano de obra).<br>
+        <strong>Solicitante:</strong> solo puede crear nuevas OS y consultar el estado.</p>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-user')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveUser()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ LOGOUT CONFIRM ═══ -->
+<div class="modal-overlay" id="modal-logout">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-hdr">
+      <div class="modal-icon">🔒</div>
+      <div><div class="modal-title">CERRAR SESIÓN</div><div class="modal-sub">¿Confirmás que querés salir?</div></div>
+      <button class="modal-close" onclick="closeModal('modal-logout')">✕</button>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-logout')">Cancelar</button>
+      <button class="btn btn-primary" onclick="doLogout()">Cerrar sesión</button>
+    </div>
+  </div>
+</div>
 </div>
 </body>
 </html>
