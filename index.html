@@ -84,6 +84,18 @@ main{padding:22px 28px;flex:1;position:relative;z-index:1;}
 .login-btn:hover{opacity:.9;}
 .login-error{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:10px 13px;font-size:12px;color:#ef4444;margin-top:12px;display:none;}
 .login-error.show{display:block;}
+.login-cfg-link{text-align:center;margin-top:18px;}
+.login-cfg-link button{background:none;border:none;color:#4a5568;font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:underline;padding:0;}
+.login-cfg-link button:hover{color:#e8621a;}
+.login-cfg-panel{display:none;background:#0d1321;border:1px solid #1f2d42;border-radius:10px;padding:14px 16px;margin-top:14px;}
+.login-cfg-panel.show{display:block;}
+.login-cfg-panel label{display:block;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#64748b;margin-bottom:5px;}
+.login-cfg-panel input{width:100%;padding:8px 11px;background:#1a2234;border:1px solid #1f2d42;border-radius:7px;font-size:12px;color:#e2e8f0;outline:none;font-family:'DM Sans',sans-serif;box-sizing:border-box;}
+.login-cfg-panel input:focus{border-color:#e8621a;}
+.login-cfg-save{margin-top:8px;padding:6px 14px;background:#e8621a;border:none;border-radius:6px;color:#fff;font-size:12px;font-family:'Bebas Neue',sans-serif;letter-spacing:1px;cursor:pointer;}
+.login-cfg-save:hover{background:#ff7a42;}
+.login-cfg-ok{font-size:11px;color:#22c55e;margin-top:6px;display:none;}
+.login-cfg-ok.show{display:block;}
 
 /* ── USER CHIP IN TOPBAR ── */
 .user-chip{display:flex;align-items:center;gap:8px;background:#1a2234;border:1px solid #1f2d42;border-radius:8px;padding:5px 12px;cursor:pointer;transition:background .15s;}
@@ -1394,6 +1406,15 @@ function printOS() {
     </div>
     <button class="login-btn" onclick="doLogin()">INGRESAR</button>
     <div class="login-error" id="login-error">Usuario o contraseña incorrectos.</div>
+    <div class="login-cfg-link">
+      <button onclick="toggleLoginConfig()">⚙ Configurar conexión a Google Sheets</button>
+    </div>
+    <div class="login-cfg-panel" id="login-cfg-panel">
+      <label>URL del Apps Script</label>
+      <input type="url" id="login-cfg-url" placeholder="https://script.google.com/macros/s/..." autocomplete="off">
+      <button class="login-cfg-save" onclick="saveLoginConfig()">GUARDAR</button>
+      <div class="login-cfg-ok" id="login-cfg-ok">✓ URL guardada. Intentá ingresar nuevamente.</div>
+    </div>
   </div>
 </div>
 
@@ -1860,22 +1881,50 @@ async function saveUsers(users) {
   } catch(e) { console.warn('No se pudo sincronizar usuarios con Sheets:', e); }
 }
 
+// ── Login config (pre-login URL setup) ──
+function toggleLoginConfig() {
+  const panel = document.getElementById('login-cfg-panel');
+  const isOpen = panel.classList.toggle('show');
+  if (isOpen) {
+    document.getElementById('login-cfg-url').value = G_URL || '';
+  }
+}
+function saveLoginConfig() {
+  const url = (document.getElementById('login-cfg-url').value || '').trim();
+  G_URL = url;
+  localStorage.setItem('nielsen_gurl', url);
+  sessionStorage.removeItem(USERS_CACHE);
+  const ok = document.getElementById('login-cfg-ok');
+  ok.classList.add('show');
+  setTimeout(() => ok.classList.remove('show'), 3000);
+}
+
 // ── Login / Logout ──
 async function doLogin() {
   const uVal  = (document.getElementById('login-user')?.value||'').trim().toLowerCase();
   const pVal  = document.getElementById('login-pass')?.value||'';
   const err   = document.getElementById('login-error');
-  const btn   = document.querySelector('.login-btn');
-  btn.textContent = 'Verificando...'; btn.disabled = true;
-  const users = await getUsers();
-  btn.textContent = 'INGRESAR'; btn.disabled = false;
-  const found = users.find(u => u.username.toLowerCase()===uVal && u.password===pVal);
-  if (!found) { err.classList.add('show'); return; }
-  err.classList.remove('show');
-  setSession(found);
-  document.getElementById('login-screen').classList.add('hidden');
-  applyRole();
-  loadData();
+  const btn   = document.querySelector('#login-screen .login-btn');
+  try {
+    btn.textContent = 'Verificando...'; btn.disabled = true;
+    const users = await getUsers();
+    const found = users.find(u => u.username.toLowerCase()===uVal && u.password===pVal);
+    btn.textContent = 'INGRESAR'; btn.disabled = false;
+    if (!found) {
+      err.textContent = 'Usuario o contraseña incorrectos.';
+      err.classList.add('show');
+      return;
+    }
+    err.classList.remove('show');
+    setSession(found);
+    document.getElementById('login-screen').classList.add('hidden');
+    applyRole();
+    loadData();
+  } catch(e) {
+    btn.textContent = 'INGRESAR'; btn.disabled = false;
+    err.textContent = 'Error al iniciar sesión: ' + e.message;
+    err.classList.add('show');
+  }
 }
 function doLogout() { clearSession(); closeModal('modal-logout'); showLoginScreen(); }
 function showLoginScreen() {
@@ -2018,9 +2067,17 @@ if (currentUser()) {
     </div>
     <button class="login-btn" onclick="doLogin()">INGRESAR</button>
     <div class="login-error" id="login-error">Usuario o contraseña incorrectos.</div>
+    <div class="login-cfg-link">
+      <button onclick="toggleLoginConfig()">⚙ Configurar conexión a Google Sheets</button>
+    </div>
+    <div class="login-cfg-panel" id="login-cfg-panel">
+      <label>URL del Apps Script</label>
+      <input type="url" id="login-cfg-url" placeholder="https://script.google.com/macros/s/..." autocomplete="off">
+      <button class="login-cfg-save" onclick="saveLoginConfig()">GUARDAR</button>
+      <div class="login-cfg-ok" id="login-cfg-ok">✓ URL guardada. Intentá ingresar nuevamente.</div>
+    </div>
   </div>
 </div>
-
 
 <!-- ═══ MODAL USUARIO ═══ -->
 <div class="modal-overlay" id="modal-user">
