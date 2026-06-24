@@ -283,6 +283,24 @@ textarea{resize:vertical;min-height:68px;line-height:1.55;}
       <p>Resumen ejecutivo · Órdenes de Servicio · R-MTTO-010</p>
     </div>
     <div class="page-hdr-actions">
+      <select class="filter-sel" id="d-mes" onchange="renderDashboard()">
+        <option value="">Todos los meses</option>
+        <option value="01">Enero</option>
+        <option value="02">Febrero</option>
+        <option value="03">Marzo</option>
+        <option value="04">Abril</option>
+        <option value="05">Mayo</option>
+        <option value="06">Junio</option>
+        <option value="07">Julio</option>
+        <option value="08">Agosto</option>
+        <option value="09">Septiembre</option>
+        <option value="10">Octubre</option>
+        <option value="11">Noviembre</option>
+        <option value="12">Diciembre</option>
+      </select>
+      <select class="filter-sel" id="d-anio" onchange="renderDashboard()">
+        <option value="">Todos los años</option>
+      </select>
       <button class="btn btn-ghost" onclick="loadData()">↺ Actualizar</button>
       <button class="btn btn-primary" onclick="openNewOS()">＋ Nueva OS</button>
     </div>
@@ -1250,16 +1268,25 @@ function renderTable() {
 // RENDER DASHBOARD
 // ════════════════════════════════════════════════════
 function renderDashboard() {
-  const total = ordenes.length;
-  const pend = ordenes.filter(o => o.estado === 'Pendiente').length;
-  const ejec = ordenes.filter(o => o.estado === 'En ejecución').length;
-  const fin = ordenes.filter(o => o.estado === 'Finalizada').length;
-  const apro = ordenes.filter(o => o.estado === 'Aprobada').length;
+  const fMes = document.getElementById('d-mes')?.value || '';
+  const fAnio = document.getElementById('d-anio')?.value || '';
+
+  const datos = ordenes.filter(o => {
+    const fecha = toInputDate(o.fecha_pedido) || '';
+    const [anioOS, mesOS] = fecha.split('-');
+    return (!fMes || mesOS === fMes) && (!fAnio || anioOS === fAnio);
+  });
+
+  const total = datos.length;
+  const pend = datos.filter(o => o.estado === 'Pendiente').length;
+  const ejec = datos.filter(o => o.estado === 'En ejecución').length;
+  const fin = datos.filter(o => o.estado === 'Finalizada').length;
+  const apro = datos.filter(o => o.estado === 'Aprobada').length;
   const closed = fin + apro;
-  const overdue = ordenes.filter(o => isOverdue(o)).length;
+  const overdue = datos.filter(o => isOverdue(o)).length;
   const rate = total ? Math.round(closed / total * 100) + '%' : '—';
 
-  const withDur = ordenes.filter(o => parseFloat(o.duracion_hs) > 0);
+  const withDur = datos.filter(o => parseFloat(o.duracion_hs) > 0);
   const avgTime = withDur.length
     ? (withDur.reduce((s,o) => s + parseFloat(o.duracion_hs), 0) / withDur.length).toFixed(1) + ' hs'
     : '—';
@@ -1272,15 +1299,15 @@ function renderDashboard() {
   document.getElementById('d-rate').textContent = rate;
   document.getElementById('d-avgtime').textContent = avgTime;
 
-  // Nav counts
-  document.getElementById('nc-all').textContent = total;
-  document.getElementById('nc-pend').textContent = pend;
-  document.getElementById('nc-ejec').textContent = ejec;
-  document.getElementById('nc-fin').textContent = fin;
-  document.getElementById('nc-apro').textContent = apro;
+  // Nav counts (siempre sobre el total global, no filtrado)
+  document.getElementById('nc-all').textContent = ordenes.length;
+  document.getElementById('nc-pend').textContent = ordenes.filter(o => o.estado === 'Pendiente').length;
+  document.getElementById('nc-ejec').textContent = ordenes.filter(o => o.estado === 'En ejecución').length;
+  document.getElementById('nc-fin').textContent = ordenes.filter(o => o.estado === 'Finalizada').length;
+  document.getElementById('nc-apro').textContent = ordenes.filter(o => o.estado === 'Aprobada').length;
 
-  // Recent
-  const recent = [...ordenes].sort((a,b) => (b.fecha_pedido||'').localeCompare(a.fecha_pedido||'')).slice(0,8);
+  // Recent (usa datos filtrados)
+  const recent = [...datos].sort((a,b) => (b.fecha_pedido||'').localeCompare(a.fecha_pedido||'')).slice(0,8);
   document.getElementById('d-recent').innerHTML = recent.map(os => `
     <tr class="clickable" onclick="openDetail('${os.id}')">
       <td class="td-id">${os.numero}</td>
@@ -1291,18 +1318,18 @@ function renderDashboard() {
       <td class="td-desc">${escHtml(os.desc_trabajo)}</td>
       <td style="font-size:11px;color:var(--muted)">${os.plazo||'—'}</td>
       <td>${sbadge(os.estado)}</td>
-    </tr>`).join('') || '<tr><td colspan="8" class="empty"><div class="empty-icon">🔧</div><div class="empty-title">Sin órdenes registradas</div></td></tr>';
+    </tr>`).join('') || '<tr><td colspan="8" class="empty"><div class="empty-icon">🔧</div><div class="empty-title">Sin órdenes en el período seleccionado</div></td></tr>';
 
-  // Charts
+  // Charts (usan datos filtrados)
   const tipos = ['Preventivo','Correctivo','Rutinario','Expansión','Mejora'];
-  const tipoData = tipos.map(t => ordenes.filter(o => o.tipo === t).length);
+  const tipoData = tipos.map(t => datos.filter(o => o.tipo === t).length);
   const estados = ['Pendiente','En ejecución','Finalizada','Aprobada'];
-  const estData = estados.map(s => ordenes.filter(o => o.estado === s).length);
+  const estData = estados.map(s => datos.filter(o => o.estado === s).length);
 
   const areaCount = {};
-  ordenes.forEach(o => { areaCount[o.area_solicitante] = (areaCount[o.area_solicitante] || 0) + 1; });
+  datos.forEach(o => { areaCount[o.area_solicitante] = (areaCount[o.area_solicitante] || 0) + 1; });
   const destCount = {};
-  ordenes.forEach(o => {
+  datos.forEach(o => {
     const d = (o.area_destino||'').split('—')[0].trim();
     destCount[d] = (destCount[d] || 0) + 1;
   });
@@ -1400,14 +1427,19 @@ function filterStatus(s) {
   renderTable();
 }
 function populateAnios() {
-  const sel = document.getElementById('s-anio');
-  const current = sel.value;
   const anios = [...new Set(ordenes
     .map(o => (toInputDate(o.fecha_pedido) || '').split('-')[0])
     .filter(a => a && a.length === 4)
   )].sort((a, b) => b - a);
-  sel.innerHTML = '<option value="">Todos los años</option>'
-    + anios.map(a => `<option value="${a}"${a === current ? ' selected' : ''}>${a}</option>`).join('');
+  const opts = '<option value="">Todos los años</option>'
+    + anios.map(a => `<option value="${a}">${a}</option>`).join('');
+  ['s-anio', 'd-anio'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const current = sel.value;
+    sel.innerHTML = opts;
+    if (current) sel.value = current;
+  });
 }
 function refresh() { populateAnios(); renderTable(); renderDashboard(); }
 
