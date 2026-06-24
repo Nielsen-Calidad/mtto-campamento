@@ -378,7 +378,7 @@ textarea{resize:vertical;min-height:68px;line-height:1.55;}
 
   <div class="info-box">
     <div class="info-box-title">Procedimiento de referencia · PO-MTTO-005</div>
-    <p>Las OS se generan mediante solicitud del área correspondiente. El responsable de logística registra y asigna número de OS. La codificación es <strong>OS-XX-YYYY</strong> donde XX indica el área destino (MC: Taller Mecánico · MT: Taller Metalúrgico · CA: Campamento) e YYYY es la numeración correlativa.</p>
+    <p>Las OS se generan mediante solicitud del área correspondiente. El responsable de logística registra y asigna número de OS. La codificación es <strong>OS-XX-YYYY</strong> donde XX indica el área destino (MT: Taller Metalúrgico · CA: Campamento) e YYYY es la numeración correlativa.</p>
   </div>
 
   <div class="toolbar">
@@ -396,7 +396,6 @@ textarea{resize:vertical;min-height:68px;line-height:1.55;}
     </select>
     <select class="filter-sel" id="s-area" onchange="renderTable()">
       <option value="">Todas las áreas</option>
-      <option>Taller Mecánico</option>
       <option>Taller Metalúrgico</option>
       <option>Campamento</option>
       <option>Transporte</option>
@@ -499,7 +498,7 @@ function doPost(e) {
   if (!headers[0]) {
     const cols = ["id","numero","fecha_pedido","tipo","solicitante","area_solicitante",
       "responsable","area_destino","plazo","fecha_inicio","fecha_fin","duracion_hs",
-      "proximo_servicio","km_actuales","desc_trabajo","trabajo_realizado",
+      "desc_trabajo","trabajo_realizado",
       "observaciones","materiales","mano_obra","estado","obs_final"];
     sheet.getRange(1,1,1,cols.length).setValues([cols]);
   }
@@ -580,7 +579,6 @@ function doPost(e) {
               <option>Transporte</option>
               <option>Logística</option>
               <option>Campamento</option>
-              <option>Taller Mecánico</option>
               <option>Taller Metalúrgico</option>
               <option>RRHH</option>
               <option>Administración</option>
@@ -590,7 +588,6 @@ function doPost(e) {
             <label>Área destino (ejecutante) <span class="req">*</span></label>
             <select id="f-area-dest" onchange="generarProximoNumero()">
               <option value="">— Seleccionar —</option>
-              <option>Taller Mecánico</option>
               <option>Taller Metalúrgico</option>
               <option>Campamento — Plomería</option>
               <option>Campamento — Electricidad</option>
@@ -609,14 +606,6 @@ function doPost(e) {
           <div class="ff">
             <label>Plazo estimado</label>
             <input type="text" id="f-plazo" placeholder="Ej: 3 días hábiles">
-          </div>
-          <div class="ff">
-            <label>Próximo servicio (km/fecha)</label>
-            <input type="text" id="f-proximo" placeholder="Ej: 10000 km / 01/09/25">
-          </div>
-          <div class="ff">
-            <label>Kilómetros actuales</label>
-            <input type="text" id="f-km" placeholder="Ej: 85432">
           </div>
         </div>
         <div class="form-sec">Descripción del trabajo</div>
@@ -748,7 +737,6 @@ function generarProximoNumero() {
 
   // Mapeo según PO-MTTO-005
   const prefijos = {
-    'Taller Mecánico': 'MC',
     'Taller Metalúrgico': 'MT',
     'Campamento — Plomería': 'CA',
     'Campamento — Electricidad': 'CA',
@@ -835,8 +823,7 @@ function normalizeOS(o) {
     tipo: o.tipo || '', solicitante: o.solicitante || '', area_solicitante: o.area_solicitante || '',
     responsable: o.responsable || '', area_destino: o.area_destino || '',
     plazo: o.plazo || '', fecha_inicio: o.fecha_inicio || '', fecha_fin: o.fecha_fin || '',
-    duracion_hs: o.duracion_hs || '', proximo_servicio: o.proximo_servicio || '',
-    km_actuales: o.km_actuales || '', desc_trabajo: o.desc_trabajo || '',
+    duracion_hs: o.duracion_hs || '', desc_trabajo: o.desc_trabajo || '',
     trabajo_realizado: o.trabajo_realizado || '', observaciones: o.observaciones || '',
     materiales: o.materiales || '', mano_obra: o.mano_obra || '',
     estado: o.estado || 'Pendiente', obs_final: o.obs_final || ''
@@ -913,7 +900,6 @@ function readOSForm() {
     fecha_pedido: g('f-fecha-pedido'), solicitante: g('f-solicitante'),
     area_solicitante: g('f-area-sol'), area_destino: g('f-area-dest'),
     responsable: g('f-responsable'), plazo: g('f-plazo'),
-    proximo_servicio: g('f-proximo'), km_actuales: g('f-km'),
     desc_trabajo: g('f-desc'), fecha_inicio: g('f-fecha-inicio'),
     estado: g('f-estado'), trabajo_realizado: g('f-trabajo'),
     observaciones: g('f-obs'), fecha_fin: g('f-fecha-fin'),
@@ -928,7 +914,6 @@ function fillOSForm(os) {
   s('f-fecha-pedido', toInputDate(os.fecha_pedido)); s('f-solicitante', os.solicitante);
   s('f-area-sol', os.area_solicitante); s('f-area-dest', os.area_destino);
   s('f-responsable', os.responsable); s('f-plazo', os.plazo);
-  s('f-proximo', os.proximo_servicio); s('f-km', os.km_actuales);
   s('f-desc', os.desc_trabajo); s('f-fecha-inicio', toInputDate(os.fecha_inicio));
   s('f-estado', os.estado); s('f-trabajo', os.trabajo_realizado);
   s('f-obs', os.observaciones); s('f-fecha-fin', toInputDate(os.fecha_fin));
@@ -937,8 +922,8 @@ function fillOSForm(os) {
 }
 
 function clearOSForm() {
-  ['f-numero','f-fecha-pedido','f-solicitante','f-responsable','f-plazo','f-proximo',
-   'f-km','f-desc','f-fecha-inicio','f-trabajo','f-obs','f-fecha-fin','f-duracion','f-obs-final']
+  ['f-numero','f-fecha-pedido','f-solicitante','f-responsable','f-plazo',
+   'f-desc','f-fecha-inicio','f-trabajo','f-obs','f-fecha-fin','f-duracion','f-obs-final']
     .forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
   ['f-tipo','f-area-sol','f-area-dest'].forEach(id => { const el = document.getElementById(id); if(el) el.selectedIndex = 0; });
   document.getElementById('f-estado').value = 'Pendiente';
@@ -1085,7 +1070,6 @@ function openDetail(id) {
       ${di('Área ejecutante', os.area_destino)}
       ${di('Responsable MTTO', os.responsable || '—')}
     </div>
-    ${os.km_actuales || os.proximo_servicio ? `<div class="dg">${di('Km actuales',os.km_actuales||'—')}${di('Próximo servicio',os.proximo_servicio||'—')}</div>` : ''}
     <div class="desc-box"><strong style="font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);display:block;margin-bottom:6px;">Descripción del trabajo</strong>${escHtml(os.desc_trabajo)}</div>
     ${os.trabajo_realizado ? `<div class="desc-box" style="border-left-color:var(--blue)"><strong style="font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);display:block;margin-bottom:6px;">Trabajo realizado</strong>${escHtml(os.trabajo_realizado)}</div>` : ''}
     ${os.observaciones ? `<div class="desc-box" style="border-left-color:var(--warn)"><strong style="font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);display:block;margin-bottom:6px;">Observaciones</strong>${escHtml(os.observaciones)}</div>` : ''}
@@ -1152,7 +1136,7 @@ function printOS() {
       <td><span class="label">RESPONSABLE (Nombre y área):</span><br>${os.responsable||'—'}</td>
       <td><span class="label">FECHA INICIO:</span> ${fd(os.fecha_inicio)||'—'}<br><span class="label">FECHA FIN:</span> ${fd(os.fecha_fin)||'—'}<br><span class="label">DURACIÓN:</span> ${os.duracion_hs||'—'} hs</td>
     </tr>
-    <tr><td colspan="3"><span class="label">PRÓXIMO SERVICIO:</span> ${os.proximo_servicio||'_________________________'} &nbsp;&nbsp;&nbsp; <span class="label">KILÓMETROS ACTUALES:</span> ${os.km_actuales||'________________________'}</td></tr>
+
     <tr><td colspan="3" class="section-title">DESCRIPCIÓN DEL TRABAJO</td></tr>
     <tr><td colspan="3" class="desc-area">${escHtml(os.desc_trabajo)}</td></tr>
     <tr><td colspan="3" class="section-title">TRABAJO REALIZADO</td></tr>
@@ -1439,12 +1423,12 @@ function showSection(id) {
 // ════════════════════════════════════════════════════
 function exportCSV() {
   const hdr = ['ID','Nº OS','Fecha Pedido','Tipo','Solicitante','Área Solicitante','Responsable',
-    'Área Destino','Plazo','Fecha Inicio','Fecha Fin','Duración (hs)','Km Actuales',
+    'Área Destino','Plazo','Fecha Inicio','Fecha Fin','Duración (hs)',
     'Descripción','Trabajo Realizado','Observaciones','Estado'];
   const rows = ordenes.map(o => [
     o.id, o.numero, o.fecha_pedido, o.tipo, o.solicitante, o.area_solicitante,
     o.responsable, o.area_destino, o.plazo, o.fecha_inicio, o.fecha_fin, o.duracion_hs,
-    o.km_actuales, `"${(o.desc_trabajo||'').replace(/"/g,'""')}"`,
+    `"${(o.desc_trabajo||'').replace(/"/g,'""')}"`,
     `"${(o.trabajo_realizado||'').replace(/"/g,'""')}"`,
     `"${(o.observaciones||'').replace(/"/g,'""')}"`, o.estado
   ]);
