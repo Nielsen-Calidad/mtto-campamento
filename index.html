@@ -1833,9 +1833,13 @@ async function getUsers() {
   if (cached) { try { return JSON.parse(cached); } catch(e){} }
   if (!G_URL) return DEFAULT_USERS;
   try {
-    const res  = await fetch(G_URL + '?action=getUsers');
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    const res  = await fetch(G_URL + '?action=getUsers', { signal: controller.signal });
+    clearTimeout(timeout);
     const data = await res.json();
-    if (Array.isArray(data) && data.length) {
+    // Validar que son realmente usuarios (tienen campo username)
+    if (Array.isArray(data) && data.length && data[0].username) {
       sessionStorage.setItem(USERS_CACHE, JSON.stringify(data));
       return data;
     }
