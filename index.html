@@ -925,13 +925,13 @@ function readOSForm() {
 function fillOSForm(os) {
   const s = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ''; };
   s('f-numero', os.numero); s('f-tipo', os.tipo);
-  s('f-fecha-pedido', os.fecha_pedido); s('f-solicitante', os.solicitante);
+  s('f-fecha-pedido', toInputDate(os.fecha_pedido)); s('f-solicitante', os.solicitante);
   s('f-area-sol', os.area_solicitante); s('f-area-dest', os.area_destino);
   s('f-responsable', os.responsable); s('f-plazo', os.plazo);
   s('f-proximo', os.proximo_servicio); s('f-km', os.km_actuales);
-  s('f-desc', os.desc_trabajo); s('f-fecha-inicio', os.fecha_inicio);
+  s('f-desc', os.desc_trabajo); s('f-fecha-inicio', toInputDate(os.fecha_inicio));
   s('f-estado', os.estado); s('f-trabajo', os.trabajo_realizado);
-  s('f-obs', os.observaciones); s('f-fecha-fin', os.fecha_fin);
+  s('f-obs', os.observaciones); s('f-fecha-fin', toInputDate(os.fecha_fin));
   s('f-duracion', os.duracion_hs); s('f-obs-final', os.obs_final);
   setMateriales(os.materiales); setManoObra(os.mano_obra);
 }
@@ -1355,6 +1355,26 @@ function fd(d) {
     const [y,m,dd] = s.split('-');
     return `${dd}/${m}/${y}`;
   } catch(e) { return d; }
+}
+// Normaliza cualquier formato de fecha a YYYY-MM-DD para inputs type=date
+function toInputDate(d) {
+  if (!d) return '';
+  try {
+    const s = String(d).trim();
+    // ISO o YYYY-MM-DD
+    if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+    // DD/MM/YYYY
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) {
+      const [dd, mm, yyyy] = s.split('/');
+      return `${yyyy}-${mm}-${dd}`;
+    }
+    // DD-MM-YYYY
+    if (/^\d{2}-\d{2}-\d{4}$/.test(s)) {
+      const [dd, mm, yyyy] = s.split('-');
+      return `${yyyy}-${mm}-${dd}`;
+    }
+  } catch(e) {}
+  return '';
 }
 function escHtml(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
