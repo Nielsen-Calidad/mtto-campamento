@@ -1,0 +1,1445 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nielsen — Gestión de Órdenes de Servicio</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg:#0e0d08; --surface:#18160f; --surface2:#201e14; --surface3:#29261a;
+  --border:#342f20; --border2:#47412c;
+  --orange:#e85d25; --orange2:#ff7a42; --orangeD:#c44d1a;
+  --gray:#5c5548; --grayL:#8c8070;
+  --blue:#4a9eff; --green:#22c55e; --danger:#ef4444; --warn:#f59e0b; --purple:#a855f7;
+  --text:#f0ece4; --muted:#7a6e5e; --subtle:#a89f8e;
+  --grad:linear-gradient(135deg,#e85d25 0%,#ff7a42 100%);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:0;opacity:.4;}
+
+/* HEADER */
+header{background:linear-gradient(90deg,#18160f 0%,#211d10 60%,#1a1508 100%);border-bottom:2px solid var(--orange);padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:68px;position:sticky;top:0;z-index:200;box-shadow:0 2px 32px rgba(232,93,37,.18);}
+.logo{display:flex;align-items:center;gap:16px;}
+.logo-badge{background:var(--grad);color:#fff;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:4px;padding:5px 14px;border-radius:6px;box-shadow:0 0 20px rgba(232,93,37,.4);}
+.logo-sep{width:1px;height:34px;background:var(--border2);}
+.logo-title{font-family:'Bebas Neue',sans-serif;font-size:19px;letter-spacing:3px;color:var(--text);line-height:1;}
+.logo-sub{font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-top:3px;}
+.header-right{display:flex;align-items:center;gap:12px;}
+.hbadge{padding:4px 12px;border-radius:6px;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;background:rgba(232,93,37,.15);border:1px solid rgba(232,93,37,.4);color:#ff7a42;}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:var(--muted);display:inline-block;margin-right:6px;transition:background .3s;}
+.sync-dot.ok{background:var(--green);box-shadow:0 0 6px var(--green);}
+.sync-dot.err{background:var(--danger);box-shadow:0 0 6px var(--danger);}
+.sync-dot.syncing{background:var(--warn);box-shadow:0 0 6px var(--warn);animation:pulse 1s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.sync-label{font-size:11px;color:var(--muted);}
+
+/* NAV */
+nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 32px;display:flex;overflow-x:auto;gap:0;position:sticky;top:68px;z-index:199;}
+.nav-btn{background:none;border:none;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:700;padding:13px 18px;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;transition:all .2s;letter-spacing:.5px;text-transform:uppercase;}
+.nav-btn:hover{color:var(--text);}
+.nav-btn.active{color:var(--orange);border-bottom-color:var(--orange);}
+.nav-count{display:inline-block;margin-left:6px;font-family:'JetBrains Mono',monospace;font-size:10px;background:var(--surface3);padding:1px 6px;border-radius:10px;color:var(--subtle);}
+.nav-btn.active .nav-count{background:rgba(232,93,37,.2);color:var(--orange2);}
+
+/* MAIN */
+main{padding:24px 32px;max-width:1600px;margin:0 auto;position:relative;z-index:1;}
+.section{display:none;animation:fadeIn .25s ease;}
+.section.active{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* PAGE HDR */
+.page-hdr{margin-bottom:22px;display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:12px;}
+.page-hdr h1{font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:3px;line-height:1;}
+.page-hdr h1 span{color:var(--orange);}
+.page-hdr p{font-size:11.5px;color:var(--muted);margin-top:3px;letter-spacing:.4px;}
+.page-hdr-actions{display:flex;gap:8px;flex-wrap:wrap;}
+
+/* SEC TITLE */
+.sec-title{font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:3px;color:var(--orange);text-transform:uppercase;margin:24px 0 12px;display:flex;align-items:center;gap:10px;}
+.sec-title::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* GRID */
+.grid{display:grid;gap:14px;}
+.g4{grid-template-columns:repeat(4,1fr);}
+.g3{grid-template-columns:repeat(3,1fr);}
+.g2{grid-template-columns:repeat(2,1fr);}
+.g21{grid-template-columns:2fr 1fr;}
+.g12{grid-template-columns:1fr 2fr;}
+.sp{margin-bottom:16px;}
+
+/* KPI */
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;position:relative;overflow:hidden;transition:transform .15s,border-color .15s;cursor:pointer;}
+.kpi:hover{transform:translateY(-2px);border-color:var(--border2);}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--kc,var(--orange));}
+.kpi-label{font-size:10.5px;color:var(--subtle);margin-bottom:8px;letter-spacing:.3px;}
+.kpi-val{font-family:'JetBrains Mono',monospace;font-size:32px;font-weight:700;line-height:1;color:var(--text);}
+.kpi-val.sm{font-size:22px;}
+.kpi-sub{font-size:10px;color:var(--muted);margin-top:5px;}
+
+/* CARD */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 20px;}
+.card-title{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.card-title::before{content:'';width:3px;height:13px;background:var(--orange);border-radius:2px;flex-shrink:0;}
+
+/* CHART */
+.chart-wrap{position:relative;height:220px;}
+
+/* TABLE */
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:12.5px;}
+thead tr{border-bottom:1px solid var(--border);}
+th{text-align:left;padding:8px 12px;font-size:9.5px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:700;white-space:nowrap;}
+td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:middle;color:var(--text);}
+tr:last-child td{border-bottom:none;}
+tr.clickable{cursor:pointer;}
+tr.clickable:hover td{background:rgba(255,255,255,.025);}
+.mono{font-family:'JetBrains Mono',monospace;font-size:11.5px;}
+td.td-id{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--orange);}
+td.td-desc{max-width:240px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--subtle);}
+td.td-date{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);}
+
+/* BADGE */
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.4px;white-space:nowrap;}
+.badge-prev{background:rgba(74,158,255,.15);color:#4a9eff;border:1px solid rgba(74,158,255,.3);}
+.badge-corr{background:rgba(239,68,68,.15);color:#ef4444;border:1px solid rgba(239,68,68,.3);}
+.badge-rut{background:rgba(168,85,247,.15);color:#a855f7;border:1px solid rgba(168,85,247,.3);}
+.badge-exp{background:rgba(34,197,94,.15);color:#22c55e;border:1px solid rgba(34,197,94,.3);}
+.badge-mej{background:rgba(245,158,11,.15);color:#f59e0b;border:1px solid rgba(245,158,11,.3);}
+.badge-pend{background:rgba(92,85,72,.3);color:var(--subtle);border:1px solid var(--border);}
+.badge-ejec{background:rgba(74,158,255,.12);color:#4a9eff;border:1px solid rgba(74,158,255,.3);}
+.badge-fin{background:rgba(34,197,94,.12);color:#22c55e;border:1px solid rgba(34,197,94,.3);}
+.badge-apro{background:rgba(168,85,247,.12);color:#a855f7;border:1px solid rgba(168,85,247,.3);}
+
+/* SEM */
+.sem{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:middle;}
+.sem-g{background:#22c55e;box-shadow:0 0 6px #22c55e;}
+.sem-y{background:#f59e0b;box-shadow:0 0 6px #f59e0b;}
+.sem-r{background:#ef4444;box-shadow:0 0 6px #ef4444;}
+
+/* PROGRESS */
+.prog-wrap{background:var(--surface3);border-radius:6px;height:6px;overflow:hidden;margin-top:8px;}
+.prog-fill{height:100%;border-radius:6px;transition:width .6s;}
+.prog-orange{background:linear-gradient(90deg,var(--orange),var(--orange2));}
+.prog-blue{background:var(--blue);}
+.prog-green{background:var(--green);}
+
+/* TOOLBAR */
+.toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
+.search-box{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0 12px;height:34px;flex:1;min-width:180px;max-width:320px;}
+.search-box input{border:none;outline:none;background:transparent;font-size:12.5px;color:var(--text);width:100%;font-family:'DM Sans',sans-serif;}
+.search-box input::placeholder{color:var(--muted);}
+.filter-sel{height:34px;padding:0 10px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--subtle);cursor:pointer;outline:none;font-family:'DM Sans',sans-serif;}
+.filter-sel:focus{border-color:var(--border2);}
+.filter-sel option{background:var(--surface2);}
+.btn{height:34px;padding:0 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;border:1px solid transparent;transition:all .15s;font-family:'DM Sans',sans-serif;letter-spacing:.3px;}
+.btn-primary{background:var(--orange);color:#fff;border-color:var(--orange);}
+.btn-primary:hover{background:var(--orangeD);}
+.btn-ghost{background:transparent;color:var(--subtle);border-color:var(--border);}
+.btn-ghost:hover{background:var(--surface2);color:var(--text);}
+.btn-danger{background:transparent;color:var(--danger);border-color:rgba(239,68,68,.3);}
+.btn-danger:hover{background:rgba(239,68,68,.1);}
+.btn-sm{height:26px;padding:0 9px;font-size:11px;}
+.tsp{flex:1;}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:500;align-items:flex-start;justify-content:center;padding:36px 20px;overflow-y:auto;backdrop-filter:blur(4px);}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border2);border-radius:14px;width:100%;max-width:760px;box-shadow:0 24px 64px rgba(0,0,0,.6);animation:slideIn .2s ease;}
+.modal.wide{max-width:900px;}
+@keyframes slideIn{from{transform:translateY(-16px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal-hdr{display:flex;align-items:center;gap:12px;padding:16px 20px 14px;border-bottom:1px solid var(--border);}
+.modal-icon{width:36px;height:36px;border-radius:8px;background:rgba(232,93,37,.15);border:1px solid rgba(232,93,37,.3);display:flex;align-items:center;justify-content:center;font-size:16px;}
+.modal-title{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;color:var(--text);}
+.modal-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+.modal-close{margin-left:auto;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:6px;cursor:pointer;color:var(--muted);font-size:15px;background:transparent;border:none;transition:all .15s;}
+.modal-close:hover{background:var(--surface3);color:var(--text);}
+.modal-body{padding:18px 20px;max-height:75vh;overflow-y:auto;}
+.modal-footer{padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;}
+
+/* TABS */
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:18px;}
+.tab{padding:8px 16px;font-size:11.5px;font-weight:600;color:var(--muted);cursor:pointer;letter-spacing:.3px;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;}
+.tab:hover{color:var(--text);}
+.tab.active{color:var(--orange);border-bottom-color:var(--orange);}
+
+/* FORM */
+.fg{display:grid;gap:12px;}
+.fg2{grid-template-columns:1fr 1fr;}
+.fg3{grid-template-columns:1fr 1fr 1fr;}
+.fg1{grid-template-columns:1fr;}
+.ff{display:flex;flex-direction:column;gap:5px;}
+.ff.s2{grid-column:span 2;}
+.ff.s3{grid-column:span 3;}
+label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;}
+input[type=text],input[type=date],input[type=number],select,textarea{padding:8px 11px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;font-size:12.5px;color:var(--text);outline:none;font-family:'DM Sans',sans-serif;transition:border-color .15s;width:100%;}
+input[type=text]:focus,input[type=date]:focus,input[type=number]:focus,select:focus,textarea:focus{border-color:var(--border2);}
+select option{background:var(--surface2);}
+textarea{resize:vertical;min-height:68px;line-height:1.55;}
+.form-sec{font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:2px;color:var(--orange);margin:16px 0 10px;display:flex;align-items:center;gap:10px;}
+.form-sec::after{content:'';flex:1;height:1px;background:var(--border);}
+.req{color:var(--orange);}
+
+/* TIMELINE */
+.timeline{display:flex;flex-direction:column;}
+.tl-step{display:flex;gap:12px;padding-bottom:18px;position:relative;}
+.tl-step::before{content:'';position:absolute;left:15px;top:32px;bottom:0;width:1px;background:var(--border);}
+.tl-step:last-child::before{display:none;}
+.tl-dot{width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;z-index:1;border:2px solid var(--border);background:var(--surface2);}
+.tl-dot.done{background:rgba(34,197,94,.1);border-color:#22c55e;color:#22c55e;}
+.tl-dot.active{background:rgba(74,158,255,.1);border-color:#4a9eff;color:#4a9eff;}
+.tl-dot.pending{background:var(--surface3);border-color:var(--border);color:var(--muted);}
+.tl-content{flex:1;padding-top:5px;}
+.tl-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);}
+.tl-text{font-size:12.5px;color:var(--subtle);margin-top:4px;line-height:1.55;}
+.tl-date{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);margin-top:3px;}
+
+/* DETAIL */
+.dg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+.dg3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;}
+.di{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;}
+.di-label{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);}
+.di-val{font-size:13px;font-weight:500;color:var(--text);margin-top:3px;}
+.desc-box{background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--orange);border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:12.5px;color:var(--subtle);line-height:1.6;}
+
+/* EMPTY */
+.empty{text-align:center;padding:48px 20px;color:var(--muted);}
+.empty-icon{font-size:32px;margin-bottom:10px;}
+.empty-title{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:var(--subtle);}
+.empty-desc{font-size:12px;margin-top:6px;}
+
+/* INFO BOX */
+.info-box{background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--orange);border-radius:8px;padding:12px 14px;margin-bottom:14px;}
+.info-box-title{font-size:10px;font-weight:700;color:var(--orange);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px;}
+.info-box p{font-size:12px;color:var(--subtle);line-height:1.55;}
+
+/* MATERIALES TABLE */
+.mat-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px;}
+.mat-table th{background:var(--surface3);padding:6px 10px;text-align:left;font-size:9.5px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:700;}
+.mat-table td{padding:6px 10px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.mat-table tr:last-child td{border-bottom:none;}
+.mat-row-input{background:transparent;border:none;outline:none;font-size:12px;color:var(--text);font-family:'DM Sans',sans-serif;width:100%;padding:2px 4px;}
+.mat-row-input:focus{background:var(--surface3);border-radius:4px;}
+.mat-add-row{display:flex;align-items:center;gap:6px;margin-top:8px;}
+
+/* CONFIG PANEL */
+.config-panel{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:18px 20px;margin-bottom:20px;}
+.config-panel h3{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;color:var(--orange);margin-bottom:12px;}
+.config-url{display:flex;gap:8px;align-items:center;}
+.config-url input{flex:1;}
+.status-pill{padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace;}
+
+/* PRINT / OS PREVIEW */
+.os-preview{background:#fff;color:#1a1a1a;border-radius:8px;padding:0;overflow:hidden;font-family:'Arial',sans-serif;font-size:11px;}
+.os-preview-inner{padding:16px 20px;}
+
+/* OVERDUE */
+.row-overdue td{background:rgba(239,68,68,.06);}
+.overdue-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--danger);margin-right:4px;vertical-align:middle;}
+
+@media(max-width:900px){.g4,.g3{grid-template-columns:1fr 1fr;}.g2,.g21,.g12{grid-template-columns:1fr;}.dg3{grid-template-columns:1fr 1fr;}}
+@media(max-width:600px){.g4,.g3,.g2{grid-template-columns:1fr;}main{padding:16px 16px;}header{padding:0 16px;}nav{padding:0 16px;}.fg2,.fg3{grid-template-columns:1fr;}.ff.s2,.ff.s3{grid-column:span 1;}}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-badge">NIELSEN</div>
+    <div class="logo-sep"></div>
+    <div>
+      <div class="logo-title">Gestión de Mantenimiento</div>
+      <div class="logo-sub">Órdenes de Servicio · PO-MTTO-005</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <span class="sync-dot" id="sync-dot"></span>
+    <span class="sync-label" id="sync-label">Conectando...</span>
+    <span class="hbadge">OS v1.0</span>
+  </div>
+</header>
+
+<!-- NAV -->
+<nav>
+  <button class="nav-btn active" onclick="showSection('dashboard')">📊 Dashboard</button>
+  <button class="nav-btn" onclick="showSection('ordenes')">📋 Todas las OS <span class="nav-count" id="nc-all">0</span></button>
+  <button class="nav-btn" onclick="showSection('ordenes');filterStatus('Pendiente')">⏳ Pendientes <span class="nav-count" id="nc-pend">0</span></button>
+  <button class="nav-btn" onclick="showSection('ordenes');filterStatus('En ejecución')">🔧 En ejecución <span class="nav-count" id="nc-ejec">0</span></button>
+  <button class="nav-btn" onclick="showSection('ordenes');filterStatus('Finalizada')">✓ Finalizadas <span class="nav-count" id="nc-fin">0</span></button>
+  <button class="nav-btn" onclick="showSection('ordenes');filterStatus('Aprobada')">✅ Aprobadas <span class="nav-count" id="nc-apro">0</span></button>
+  <button class="nav-btn" onclick="showSection('config')">⚙ Configuración</button>
+</nav>
+
+<main>
+
+<!-- ═══ DASHBOARD ═══ -->
+<div class="section active" id="sec-dashboard">
+  <div class="page-hdr">
+    <div>
+      <h1>DASHBOARD <span>MTTO</span></h1>
+      <p>Resumen ejecutivo · Órdenes de Servicio · R-MTTO-010</p>
+    </div>
+    <div class="page-hdr-actions">
+      <button class="btn btn-ghost" onclick="loadData()">↺ Actualizar</button>
+      <button class="btn btn-primary" onclick="openNewOS()">＋ Nueva OS</button>
+    </div>
+  </div>
+
+  <div class="sec-title">Indicadores generales</div>
+  <div class="grid g4 sp">
+    <div class="kpi" style="--kc:var(--orange)" onclick="showSection('ordenes')">
+      <div class="kpi-label">Total Órdenes de Servicio</div>
+      <div class="kpi-val" id="d-total">0</div>
+      <div class="kpi-sub">Registradas en el sistema</div>
+    </div>
+    <div class="kpi" style="--kc:var(--warn)" onclick="showSection('ordenes');filterStatus('Pendiente')">
+      <div class="kpi-label">Pendientes</div>
+      <div class="kpi-val" id="d-pend" style="color:var(--warn)">0</div>
+      <div class="kpi-sub">Sin iniciar</div>
+    </div>
+    <div class="kpi" style="--kc:var(--blue)" onclick="showSection('ordenes');filterStatus('En ejecución')">
+      <div class="kpi-label">En ejecución</div>
+      <div class="kpi-val" id="d-ejec" style="color:var(--blue)">0</div>
+      <div class="kpi-sub">Trabajos en curso</div>
+    </div>
+    <div class="kpi" style="--kc:var(--green)" onclick="showSection('ordenes');filterStatus('Aprobada')">
+      <div class="kpi-label">Cerradas / Aprobadas</div>
+      <div class="kpi-val" id="d-closed" style="color:var(--green)">0</div>
+      <div class="kpi-sub">Conformidad del servicio</div>
+    </div>
+  </div>
+
+  <div class="grid g3 sp">
+    <div class="kpi" style="--kc:var(--danger)">
+      <div class="kpi-label">Vencidas sin cerrar</div>
+      <div class="kpi-val sm" id="d-overdue" style="color:var(--danger)">0</div>
+      <div class="kpi-sub">Plazo superado</div>
+    </div>
+    <div class="kpi" style="--kc:var(--orange2)">
+      <div class="kpi-label">Tasa de cumplimiento</div>
+      <div class="kpi-val sm" id="d-rate">—</div>
+      <div class="kpi-sub">OS cerradas / total</div>
+    </div>
+    <div class="kpi" style="--kc:var(--purple)">
+      <div class="kpi-label">Tiempo promedio (hs)</div>
+      <div class="kpi-val sm" id="d-avgtime">—</div>
+      <div class="kpi-sub">OS con duración registrada</div>
+    </div>
+  </div>
+
+  <div class="grid g2 sp">
+    <div class="card">
+      <div class="card-title">OS por tipo de mantenimiento</div>
+      <div class="chart-wrap"><canvas id="chart-tipo"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Estado de las OS</div>
+      <div class="chart-wrap"><canvas id="chart-estado"></canvas></div>
+    </div>
+  </div>
+
+  <div class="grid g21 sp">
+    <div class="card">
+      <div class="card-title">OS por área solicitante</div>
+      <div class="chart-wrap"><canvas id="chart-area"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">OS por área ejecutante</div>
+      <div class="chart-wrap"><canvas id="chart-dest"></canvas></div>
+    </div>
+  </div>
+
+  <div class="sec-title">Últimas órdenes de servicio</div>
+  <div class="card">
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>OS Nº</th><th>Fecha</th><th>Tipo</th><th>Solicitante</th><th>Área destino</th><th>Descripción</th><th>Plazo</th><th>Estado</th></tr></thead>
+        <tbody id="d-recent"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ ORDENES ═══ -->
+<div class="section" id="sec-ordenes">
+  <div class="page-hdr">
+    <div>
+      <h1>REGISTRO DE <span>ÓRDENES DE SERVICIO</span></h1>
+      <p>Seguimiento completo · PO-MTTO-005-01 · R-MTTO-010</p>
+    </div>
+    <div class="page-hdr-actions">
+      <button class="btn btn-ghost" onclick="exportCSV()">↓ Exportar CSV</button>
+      <button class="btn btn-primary" onclick="openNewOS()">＋ Nueva OS</button>
+    </div>
+  </div>
+
+  <div class="info-box">
+    <div class="info-box-title">Procedimiento de referencia · PO-MTTO-005</div>
+    <p>Las OS se generan mediante solicitud del área correspondiente. El responsable de logística registra y asigna número de OS. La codificación es <strong>OS-XX-YYYY</strong> donde XX indica el área destino (MC: Taller Mecánico · MT: Taller Metalúrgico · CA: Campamento) e YYYY es la numeración correlativa.</p>
+  </div>
+
+  <div class="toolbar">
+    <div class="search-box">
+      <span style="color:var(--muted);font-size:13px">⌕</span>
+      <input type="text" id="s-search" placeholder="Buscar OS, descripción, responsable..." oninput="renderTable()">
+    </div>
+    <select class="filter-sel" id="s-tipo" onchange="renderTable()">
+      <option value="">Todos los tipos</option>
+      <option>Preventivo</option>
+      <option>Correctivo</option>
+      <option>Rutinario</option>
+      <option>Expansión</option>
+      <option>Mejora</option>
+    </select>
+    <select class="filter-sel" id="s-area" onchange="renderTable()">
+      <option value="">Todas las áreas</option>
+      <option>Taller Mecánico</option>
+      <option>Taller Metalúrgico</option>
+      <option>Campamento</option>
+      <option>Transporte</option>
+      <option>Logística</option>
+      <option>RRHH</option>
+      <option>Administración</option>
+    </select>
+    <select class="filter-sel" id="s-estado" onchange="renderTable()">
+      <option value="">Todos los estados</option>
+      <option>Pendiente</option>
+      <option>En ejecución</option>
+      <option>Finalizada</option>
+      <option>Aprobada</option>
+    </select>
+    <div class="tsp"></div>
+  </div>
+
+  <div class="card">
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>OS Nº</th><th>Fecha pedido</th><th>Tipo</th>
+            <th>Solicitante / Área</th><th>Área destino</th>
+            <th>Descripción</th><th>Responsable</th>
+            <th>Plazo</th><th>Estado</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="main-tbody"></tbody>
+      </table>
+      <div id="main-empty" class="empty" style="display:none;">
+        <div class="empty-icon">🔧</div>
+        <div class="empty-title">Sin resultados</div>
+        <div class="empty-desc">No hay órdenes que coincidan con los filtros aplicados.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ CONFIG ═══ -->
+<div class="section" id="sec-config">
+  <div class="page-hdr">
+    <div>
+      <h1>CON<span>FIGURACIÓN</span></h1>
+      <p>Integración con Google Sheets · sincronización en la nube</p>
+    </div>
+  </div>
+
+  <div class="config-url">
+  <input type="text" id="cfg-url"
+         value="https://script.google.com/macros/s/AKfycbwm6YBpEBHStE3XJc5qQzWColpIvoiY0sMPCVAvsT9-dOsp2ZQt8uHBP5RJnHrja22M/exec"
+         style="font-family:'JetBrains Mono',monospace; font-size:11px;">
+  <button class="btn btn-primary" onclick="saveConfig()">Guardar</button>
+  <button class="btn btn-ghost" onclick="testConnection()">Probar conexión</button>
+</div>
+<div id="cfg-status" style="margin-top:8px;font-size:12px;min-height:18px;"></div>
+
+  <div class="config-panel">
+    <h3>📋 Instrucciones — Google Apps Script</h3>
+    <p style="font-size:12px;color:var(--subtle);margin-bottom:12px;line-height:1.7;">
+      1. En tu Google Drive, creá una nueva <strong>Hoja de Cálculo</strong> (Google Sheets) con el nombre que quieras.<br>
+      2. En el menú <strong>Extensiones → Apps Script</strong>, pegá el siguiente código y hacé clic en <strong>Implementar → Nueva implementación → Aplicación web</strong>.<br>
+      3. En "Quién tiene acceso" seleccioná <strong>Cualquier persona</strong> y copiá la URL generada.<br>
+      4. Pegá esa URL en el campo de arriba.
+    </p>
+    <div style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:14px 16px;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--subtle);line-height:1.8;overflow-x:auto;white-space:pre;">
+const SHEET_NAME = "OS";
+
+function doGet(e) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet()
+                  .getSheetByName(SHEET_NAME);
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0];
+  const rows = data.slice(1).map(row => {
+    const obj = {};
+    headers.forEach((h, i) => obj[h] = row[i]);
+    return obj;
+  });
+  return ContentService
+    .createTextOutput(JSON.stringify(rows))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet()
+                  .getSheetByName(SHEET_NAME);
+  const body = JSON.parse(e.postData.contents);
+  
+  if (body.action === "delete") {
+    const data = sheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][0] == body.id) { sheet.deleteRow(i+1); break; }
+    }
+    return ContentService.createTextOutput("ok");
+  }
+  
+  const headers = sheet.getRange(1,1,1,sheet.getLastColumn()).getValues()[0];
+  
+  // Si no hay encabezados, crear
+  if (!headers[0]) {
+    const cols = ["id","numero","fecha_pedido","tipo","solicitante","area_solicitante",
+      "responsable","area_destino","plazo","fecha_inicio","fecha_fin","duracion_hs",
+      "proximo_servicio","km_actuales","desc_trabajo","trabajo_realizado",
+      "observaciones","materiales","mano_obra","estado","obs_final"];
+    sheet.getRange(1,1,1,cols.length).setValues([cols]);
+  }
+  
+  const data = sheet.getDataRange().getValues();
+  const hdrs = data[0];
+  const row = hdrs.map(h => body[h] !== undefined ? body[h] : "");
+  
+  // Buscar si existe para actualizar
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] == body.id) {
+      sheet.getRange(i+1, 1, 1, row.length).setValues([row]);
+      return ContentService.createTextOutput("updated");
+    }
+  }
+  sheet.appendRow(row);
+  return ContentService.createTextOutput("created");
+}</div>
+    <button class="btn btn-ghost" style="margin-top:10px;font-size:11px;" onclick="copyScript()">📋 Copiar código</button>
+  </div>
+</div>
+
+</main>
+
+<!-- ═══ MODAL NUEVA/EDITAR OS ═══ -->
+<div class="modal-overlay" id="modal-os">
+  <div class="modal wide">
+    <div class="modal-hdr">
+      <div class="modal-icon">🔧</div>
+      <div>
+        <div class="modal-title" id="mos-title">NUEVA ORDEN DE SERVICIO</div>
+        <div class="modal-sub" id="mos-sub">Completar los datos requeridos — PO-MTTO-005</div>
+      </div>
+      <button class="modal-close" onclick="closeModal('modal-os')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="tabs">
+        <div class="tab active" onclick="switchOSTab(0)">📝 Solicitud</div>
+        <div class="tab" onclick="switchOSTab(1)">🔧 Ejecución</div>
+        <div class="tab" onclick="switchOSTab(2)">✅ Cierre</div>
+      </div>
+
+      <!-- Tab 0: Solicitud -->
+      <div id="ostab-0">
+        <div class="form-sec">Identificación</div>
+        <div class="fg fg3">
+          <div class="ff">
+             <label>Nº de OS <span class="req">*</span></label>
+             <input type="text" id="f-numero" placeholder="Se asignará automáticamente" 
+         readonly style="font-family:'JetBrains Mono',monospace; background:var(--surface3); cursor:not-allowed;">
+           </div>
+          <div class="ff">
+            <label>Tipo de mantenimiento <span class="req">*</span></label>
+            <select id="f-tipo">
+              <option value="">— Seleccionar —</option>
+              <option>Preventivo</option>
+              <option>Correctivo</option>
+              <option>Rutinario</option>
+              <option>Expansión</option>
+              <option>Mejora</option>
+            </select>
+          </div>
+          <div class="ff">
+            <label>Fecha de pedido <span class="req">*</span></label>
+            <input type="date" id="f-fecha-pedido">
+          </div>
+        </div>
+        <div class="form-sec">Solicitante</div>
+        <div class="fg fg2">
+          <div class="ff">
+            <label>Nombre del solicitante <span class="req">*</span></label>
+            <input type="text" id="f-solicitante" placeholder="Nombre y apellido">
+          </div>
+          <div class="ff">
+            <label>Área solicitante <span class="req">*</span></label>
+            <select id="f-area-sol">
+              <option value="">— Seleccionar —</option>
+              <option>Transporte</option>
+              <option>Logística</option>
+              <option>Campamento</option>
+              <option>Taller Mecánico</option>
+              <option>Taller Metalúrgico</option>
+              <option>RRHH</option>
+              <option>Administración</option>
+            </select>
+          </div>
+          <div class="ff">
+            <label>Área destino (ejecutante) <span class="req">*</span></label>
+            <select id="f-area-dest" onchange="generarProximoNumero()">
+              <option value="">— Seleccionar —</option>
+              <option>Taller Mecánico</option>
+              <option>Taller Metalúrgico</option>
+              <option>Campamento — Plomería</option>
+              <option>Campamento — Electricidad</option>
+              <option>Campamento — Miscelánea</option>
+              <option>Campamento — Edilicio</option>
+              <option>Campamento — Equipamiento</option>
+            </select>
+          </div>
+          <div class="ff">
+            <label>Responsable MTTO</label>
+            <input type="text" id="f-responsable" placeholder="Nombre del responsable">
+          </div>
+        </div>
+        <div class="form-sec">Fechas y plazos</div>
+        <div class="fg fg3">
+          <div class="ff">
+            <label>Plazo estimado</label>
+            <input type="text" id="f-plazo" placeholder="Ej: 3 días hábiles">
+          </div>
+          <div class="ff">
+            <label>Próximo servicio (km/fecha)</label>
+            <input type="text" id="f-proximo" placeholder="Ej: 10000 km / 01/09/25">
+          </div>
+          <div class="ff">
+            <label>Kilómetros actuales</label>
+            <input type="text" id="f-km" placeholder="Ej: 85432">
+          </div>
+        </div>
+        <div class="form-sec">Descripción del trabajo</div>
+        <div class="fg fg1">
+          <div class="ff">
+            <label>Descripción del trabajo requerido <span class="req">*</span></label>
+            <textarea id="f-desc" rows="4" placeholder="Describir detalladamente el trabajo a realizar, incluyendo el equipo o infraestructura afectada..."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 1: Ejecución -->
+      <div id="ostab-1" style="display:none">
+        <div class="form-sec">Ejecución del trabajo</div>
+        <div class="fg fg2">
+          <div class="ff">
+            <label>Fecha de inicio</label>
+            <input type="date" id="f-fecha-inicio">
+          </div>
+          <div class="ff">
+            <label>Estado actual</label>
+            <select id="f-estado">
+              <option>Pendiente</option>
+              <option>En ejecución</option>
+              <option>Finalizada</option>
+              <option>Aprobada</option>
+            </select>
+          </div>
+        </div>
+        <div class="fg fg1">
+          <div class="ff">
+            <label>Trabajo realizado</label>
+            <textarea id="f-trabajo" rows="5" placeholder="Describir el trabajo efectivamente realizado..."></textarea>
+          </div>
+          <div class="ff">
+            <label>Observaciones</label>
+            <textarea id="f-obs" rows="3" placeholder="Observaciones durante la ejecución..."></textarea>
+          </div>
+        </div>
+
+        <div class="form-sec">Materiales utilizados</div>
+        <table class="mat-table">
+          <thead><tr><th width="80">Cantidad</th><th>Descripción del material</th><th width="28"></th></tr></thead>
+          <tbody id="mat-tbody"></tbody>
+        </table>
+        <div class="mat-add-row">
+          <button class="btn btn-ghost btn-sm" onclick="addMatRow()">＋ Agregar material</button>
+        </div>
+
+        <div class="form-sec">Mano de obra</div>
+        <table class="mat-table">
+          <thead><tr><th>Nombre del operario</th><th width="120">Fecha</th><th width="100">Tiempo (hs)</th><th width="28"></th></tr></thead>
+          <tbody id="mo-tbody"></tbody>
+        </table>
+        <div class="mat-add-row">
+          <button class="btn btn-ghost btn-sm" onclick="addMORow()">＋ Agregar operario</button>
+        </div>
+      </div>
+
+      <!-- Tab 2: Cierre -->
+      <div id="ostab-2" style="display:none">
+        <div class="form-sec">Finalización y aprobaciones</div>
+        <div class="fg fg2">
+          <div class="ff">
+            <label>Fecha de finalización</label>
+            <input type="date" id="f-fecha-fin">
+          </div>
+          <div class="ff">
+            <label>Duración total (horas)</label>
+            <input type="number" id="f-duracion" placeholder="0" step="0.5" min="0">
+          </div>
+        </div>
+        <div class="fg fg1">
+          <div class="ff">
+            <label>Observaciones finales / conformidad del servicio</label>
+            <textarea id="f-obs-final" rows="3" placeholder="Notas de cierre, conformidad o disconformidad del solicitante..."></textarea>
+          </div>
+        </div>
+        <div class="info-box" style="margin-top:16px;">
+          <div class="info-box-title">Flujo de aprobación — PO-MTTO-005 sección 6.7 y 6.8</div>
+          <p>Una vez finalizado el trabajo, el <strong>Responsable de MTTO</strong> aprueba y firma la OS. Luego el <strong>ejecutante</strong> firma y finalmente el <strong>solicitante</strong> da conformidad del servicio. Solo entonces la OS se considera cerrada (estado: Aprobada).</p>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-os')">Cancelar</button>
+      <button class="btn btn-ghost" onclick="prevOSTab()">← Anterior</button>
+      <button class="btn btn-ghost" onclick="nextOSTab()">Siguiente →</button>
+      <button class="btn btn-primary" id="mos-save-btn" onclick="saveOS()">💾 Guardar OS</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL DETALLE OS ═══ -->
+<div class="modal-overlay" id="modal-detail">
+  <div class="modal wide">
+    <div class="modal-hdr">
+      <div class="modal-icon">📋</div>
+      <div>
+        <div class="modal-title" id="md-title">ORDEN DE SERVICIO</div>
+        <div class="modal-sub" id="md-sub"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal('modal-detail')">✕</button>
+    </div>
+    <div class="modal-body" id="md-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-detail')">Cerrar</button>
+      <button class="btn btn-ghost" id="md-print-btn" onclick="printOS()">🖨 Imprimir OS</button>
+      <button class="btn btn-primary" id="md-edit-btn">✏ Editar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════
+// LÓGICA DE NEGOCIO — NIELSEN MTTO
+// ════════════════════════════════════════════════════
+
+function generarProximoNumero() {
+  if (editingId) return; // Si editamos, no tocamos el número existente
+
+  const areaDestino = document.getElementById('f-area-dest').value;
+  const inputNumero = document.getElementById('f-numero');
+
+  if (!areaDestino) {
+    inputNumero.value = '';
+    return;
+  }
+
+  // Mapeo según PO-MTTO-005
+  const prefijos = {
+    'Taller Mecánico': 'MC',
+    'Taller Metalúrgico': 'MT',
+    'Campamento — Plomería': 'CA',
+    'Campamento — Electricidad': 'CA',
+    'Campamento — Miscelánea': 'CA',
+    'Campamento — Edilicio': 'CA',
+    'Campamento — Equipamiento': 'CA'
+  };
+
+  const prefijo = prefijos[areaDestino] || 'GEN';
+  let maxCorrelativo = 0;
+  
+  // Escaneamos las órdenes actuales para encontrar el último número
+  ordenes.forEach(os => {
+    if (os.numero && os.numero.startsWith(`OS-${prefijo}-`)) {
+      const partes = os.numero.split('-');
+      if (partes.length >= 3) {
+        const num = parseInt(partes[2]);
+        if (!isNaN(num) && num > maxCorrelativo) maxCorrelativo = num;
+      }
+    }
+  });
+
+  const proximo = String(maxCorrelativo + 1).padStart(4, '0');
+  inputNumero.value = `OS-${prefijo}-${proximo}`;
+}
+
+// ════════════════════════════════════════════════════
+// CONFIG & STATE
+// ════════════════════════════════════════════════════
+const SK = 'nielsen_os_v1';
+let G_URL = localStorage.getItem('nielsen_os_url') || '';
+let ordenes = [];
+let editingId = null;
+let charts = {};
+let currentOSTab = 0;
+let detailId = null;
+
+// ════════════════════════════════════════════════════
+// SYNC UI
+// ════════════════════════════════════════════════════
+function setSyncState(state, msg) {
+  const dot = document.getElementById('sync-dot');
+  const lbl = document.getElementById('sync-label');
+  dot.className = 'sync-dot ' + state;
+  lbl.textContent = msg;
+}
+
+// ════════════════════════════════════════════════════
+// NUBE — LOAD & SAVE
+// ════════════════════════════════════════════════════
+async function loadData() {
+  if (!G_URL) {
+    setSyncState('err', 'Sin URL configurada');
+    const local = localStorage.getItem(SK);
+    ordenes = local ? JSON.parse(local) : [];
+    refresh();
+    return;
+  }
+  setSyncState('syncing', 'Sincronizando...');
+  try {
+    const res = await fetch(G_URL);
+    const data = await res.json();
+    if (data && Array.isArray(data) && data.length > 0) {
+      // deduplicar por id
+      const map = new Map();
+      data.forEach(o => { if(o.id) map.set(String(o.id), normalizeOS(o)); });
+      ordenes = Array.from(map.values());
+      localStorage.setItem(SK, JSON.stringify(ordenes));
+      setSyncState('ok', 'Sincronizado · ' + new Date().toLocaleTimeString('es-AR'));
+    } else {
+      throw new Error('Sin datos');
+    }
+  } catch(e) {
+    setSyncState('err', 'Sin conexión · usando datos locales');
+    const local = localStorage.getItem(SK);
+    ordenes = local ? JSON.parse(local) : [];
+  }
+  refresh();
+}
+
+function normalizeOS(o) {
+  return {
+    id: o.id || '', numero: o.numero || '', fecha_pedido: o.fecha_pedido || '',
+    tipo: o.tipo || '', solicitante: o.solicitante || '', area_solicitante: o.area_solicitante || '',
+    responsable: o.responsable || '', area_destino: o.area_destino || '',
+    plazo: o.plazo || '', fecha_inicio: o.fecha_inicio || '', fecha_fin: o.fecha_fin || '',
+    duracion_hs: o.duracion_hs || '', proximo_servicio: o.proximo_servicio || '',
+    km_actuales: o.km_actuales || '', desc_trabajo: o.desc_trabajo || '',
+    trabajo_realizado: o.trabajo_realizado || '', observaciones: o.observaciones || '',
+    materiales: o.materiales || '', mano_obra: o.mano_obra || '',
+    estado: o.estado || 'Pendiente', obs_final: o.obs_final || ''
+  };
+}
+
+async function pushOS(os) {
+  if (!G_URL) return false;
+  try {
+    await fetch(G_URL, {
+      method: 'POST',
+      mode: 'no-cors', // Volvemos a ponerlo para evitar errores de pre-flight si el script es simple
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(os)
+    });
+    return true; // En modo no-cors siempre asumimos true si no hay error de red
+  } catch(e) { 
+    console.error("Error de red:", e);
+    return false; 
+  }
+}
+
+async function deleteOS(id) {
+  if (!confirm('¿Eliminar esta Orden de Servicio? Esta acción no se puede deshacer.')) return;
+  ordenes = ordenes.filter(o => o.id !== id);
+  localStorage.setItem(SK, JSON.stringify(ordenes));
+  if (G_URL) {
+    try { await fetch(G_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'delete',id}) }); } catch(e){}
+  }
+  refresh();
+}
+
+// ════════════════════════════════════════════════════
+// SAVE OS
+// ════════════════════════════════════════════════════
+async function saveOS() {
+  const d = readOSForm();
+  if (!d.numero.trim()) { alert('El número de OS es obligatorio.'); switchOSTab(0); return; }
+  if (!d.tipo) { alert('Seleccioná el tipo de mantenimiento.'); switchOSTab(0); return; }
+  if (!d.solicitante.trim()) { alert('El nombre del solicitante es obligatorio.'); switchOSTab(0); return; }
+  if (!d.area_solicitante) { alert('Seleccioná el área solicitante.'); switchOSTab(0); return; }
+  if (!d.area_destino) { alert('Seleccioná el área destino.'); switchOSTab(0); return; }
+  if (!d.desc_trabajo.trim()) { alert('La descripción del trabajo es obligatoria.'); switchOSTab(0); return; }
+
+  const btn = document.getElementById('mos-save-btn');
+  btn.textContent = 'Guardando...'; btn.disabled = true;
+
+  let finalOS;
+  if (editingId) {
+    const i = ordenes.findIndex(o => o.id === editingId);
+    if (i >= 0) { ordenes[i] = {...ordenes[i], ...d}; finalOS = ordenes[i]; }
+  } else {
+    finalOS = { id: nextId(), ...d };
+    ordenes.push(finalOS);
+  }
+
+  localStorage.setItem(SK, JSON.stringify(ordenes));
+  const synced = await pushOS(finalOS);
+  if (synced) setSyncState('ok', 'Guardado en nube · ' + new Date().toLocaleTimeString('es-AR'));
+  else if (G_URL) setSyncState('err', 'Guardado solo localmente');
+
+  btn.textContent = '💾 Guardar OS'; btn.disabled = false;
+  closeModal('modal-os');
+  refresh();
+}
+
+// ════════════════════════════════════════════════════
+// FORM READ/WRITE
+// ════════════════════════════════════════════════════
+function readOSForm() {
+  const g = id => (document.getElementById(id)?.value || '').trim();
+  return {
+    numero: g('f-numero'), tipo: g('f-tipo'),
+    fecha_pedido: g('f-fecha-pedido'), solicitante: g('f-solicitante'),
+    area_solicitante: g('f-area-sol'), area_destino: g('f-area-dest'),
+    responsable: g('f-responsable'), plazo: g('f-plazo'),
+    proximo_servicio: g('f-proximo'), km_actuales: g('f-km'),
+    desc_trabajo: g('f-desc'), fecha_inicio: g('f-fecha-inicio'),
+    estado: g('f-estado'), trabajo_realizado: g('f-trabajo'),
+    observaciones: g('f-obs'), fecha_fin: g('f-fecha-fin'),
+    duracion_hs: g('f-duracion'), obs_final: g('f-obs-final'),
+    materiales: getMateriales(), mano_obra: getManoObra()
+  };
+}
+
+function fillOSForm(os) {
+  const s = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ''; };
+  s('f-numero', os.numero); s('f-tipo', os.tipo);
+  s('f-fecha-pedido', os.fecha_pedido); s('f-solicitante', os.solicitante);
+  s('f-area-sol', os.area_solicitante); s('f-area-dest', os.area_destino);
+  s('f-responsable', os.responsable); s('f-plazo', os.plazo);
+  s('f-proximo', os.proximo_servicio); s('f-km', os.km_actuales);
+  s('f-desc', os.desc_trabajo); s('f-fecha-inicio', os.fecha_inicio);
+  s('f-estado', os.estado); s('f-trabajo', os.trabajo_realizado);
+  s('f-obs', os.observaciones); s('f-fecha-fin', os.fecha_fin);
+  s('f-duracion', os.duracion_hs); s('f-obs-final', os.obs_final);
+  setMateriales(os.materiales); setManoObra(os.mano_obra);
+}
+
+function clearOSForm() {
+  ['f-numero','f-fecha-pedido','f-solicitante','f-responsable','f-plazo','f-proximo',
+   'f-km','f-desc','f-fecha-inicio','f-trabajo','f-obs','f-fecha-fin','f-duracion','f-obs-final']
+    .forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  ['f-tipo','f-area-sol','f-area-dest'].forEach(id => { const el = document.getElementById(id); if(el) el.selectedIndex = 0; });
+  document.getElementById('f-estado').value = 'Pendiente';
+  document.getElementById('mat-tbody').innerHTML = '';
+  document.getElementById('mo-tbody').innerHTML = '';
+}
+
+// ════════════════════════════════════════════════════
+// MATERIALES & MANO DE OBRA
+// ════════════════════════════════════════════════════
+function addMatRow(cant='', desc='') {
+  const tbody = document.getElementById('mat-tbody');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input class="mat-row-input" type="text" value="${cant}" placeholder="Ej: 2"></td>
+    <td><input class="mat-row-input" type="text" value="${escHtml(desc)}" placeholder="Descripción del material"></td>
+    <td><button class="btn btn-danger btn-sm" onclick="this.closest('tr').remove()">✕</button></td>`;
+  tbody.appendChild(tr);
+}
+function addMORow(nombre='', fecha='', tiempo='') {
+  const tbody = document.getElementById('mo-tbody');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input class="mat-row-input" type="text" value="${escHtml(nombre)}" placeholder="Nombre del operario"></td>
+    <td><input class="mat-row-input" type="date" value="${fecha}"></td>
+    <td><input class="mat-row-input" type="text" value="${tiempo}" placeholder="Hs"></td>
+    <td><button class="btn btn-danger btn-sm" onclick="this.closest('tr').remove()">✕</button></td>`;
+  tbody.appendChild(tr);
+}
+function getMateriales() {
+  const rows = document.querySelectorAll('#mat-tbody tr');
+  return JSON.stringify(Array.from(rows).map(tr => {
+    const inputs = tr.querySelectorAll('input');
+    return { cant: inputs[0]?.value || '', desc: inputs[1]?.value || '' };
+  }).filter(r => r.desc));
+}
+function getManoObra() {
+  const rows = document.querySelectorAll('#mo-tbody tr');
+  return JSON.stringify(Array.from(rows).map(tr => {
+    const inputs = tr.querySelectorAll('input');
+    return { nombre: inputs[0]?.value || '', fecha: inputs[1]?.value || '', tiempo: inputs[2]?.value || '' };
+  }).filter(r => r.nombre));
+}
+function setMateriales(str) {
+  document.getElementById('mat-tbody').innerHTML = '';
+  try { const arr = JSON.parse(str || '[]'); arr.forEach(r => addMatRow(r.cant, r.desc)); } catch(e){}
+}
+function setManoObra(str) {
+  document.getElementById('mo-tbody').innerHTML = '';
+  try { const arr = JSON.parse(str || '[]'); arr.forEach(r => addMORow(r.nombre, r.fecha, r.tiempo)); } catch(e){}
+}
+
+// ════════════════════════════════════════════════════
+// MODAL HANDLERS
+// ════════════════════════════════════════════════════
+function openNewOS() {
+  editingId = null;
+  clearOSForm();
+  document.getElementById('mos-title').textContent = 'NUEVA ORDEN DE SERVICIO';
+  document.getElementById('mos-sub').textContent = 'Completar los datos requeridos — PO-MTTO-005';
+  document.getElementById('f-fecha-pedido').value = new Date().toISOString().slice(0,10);
+  switchOSTab(0);
+  document.getElementById('modal-os').classList.add('open');
+}
+function openEdit(id) {
+  const os = ordenes.find(o => o.id === id);
+  if (!os) return;
+  editingId = id;
+  fillOSForm(os);
+  document.getElementById('mos-title').textContent = 'EDITAR ORDEN DE SERVICIO';
+  document.getElementById('mos-sub').textContent = os.numero;
+  switchOSTab(0);
+  document.getElementById('modal-os').classList.add('open');
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ════════════════════════════════════════════════════
+// OS TABS
+// ════════════════════════════════════════════════════
+function switchOSTab(idx) {
+  currentOSTab = idx;
+  document.querySelectorAll('#modal-os .tab').forEach((t,i) => t.classList.toggle('active', i === idx));
+  [0,1,2].forEach(i => {
+    const el = document.getElementById('ostab-'+i);
+    if (el) el.style.display = i === idx ? 'block' : 'none';
+  });
+}
+function nextOSTab() { if (currentOSTab < 2) switchOSTab(currentOSTab + 1); }
+function prevOSTab() { if (currentOSTab > 0) switchOSTab(currentOSTab - 1); }
+
+// ════════════════════════════════════════════════════
+// DETAIL MODAL
+// ════════════════════════════════════════════════════
+function openDetail(id) {
+  const os = ordenes.find(o => o.id === id);
+  if (!os) return;
+  detailId = id;
+  document.getElementById('md-title').textContent = os.numero || 'ORDEN DE SERVICIO';
+  document.getElementById('md-sub').innerHTML = `${tbadge(os.tipo)} ${sbadge(os.estado)} — ${os.area_solicitante} → ${os.area_destino}`;
+  document.getElementById('md-edit-btn').onclick = () => { closeModal('modal-detail'); openEdit(id); };
+
+  const di = (l, v) => v ? `<div class="di"><div class="di-label">${l}</div><div class="di-val">${v}</div></div>` : '';
+
+  let matsHtml = '';
+  try {
+    const mats = JSON.parse(os.materiales || '[]');
+    if (mats.length) {
+      matsHtml = `<table class="mat-table" style="margin-top:0"><thead><tr><th>Cant.</th><th>Descripción</th></tr></thead><tbody>
+        ${mats.map(m => `<tr><td>${m.cant}</td><td>${escHtml(m.desc)}</td></tr>`).join('')}
+      </tbody></table>`;
+    }
+  } catch(e){}
+
+  let moHtml = '';
+  try {
+    const mos = JSON.parse(os.mano_obra || '[]');
+    if (mos.length) {
+      moHtml = `<table class="mat-table" style="margin-top:0"><thead><tr><th>Nombre</th><th>Fecha</th><th>Tiempo</th></tr></thead><tbody>
+        ${mos.map(m => `<tr><td>${escHtml(m.nombre)}</td><td>${fd(m.fecha)}</td><td>${m.tiempo} hs</td></tr>`).join('')}
+      </tbody></table>`;
+    }
+  } catch(e){}
+
+  const tlDot = s => {
+    if (s==='done') return `<div class="tl-dot done">✓</div>`;
+    if (s==='active') return `<div class="tl-dot active">↻</div>`;
+    return `<div class="tl-dot pending">○</div>`;
+  };
+  const tlStep = (s,lbl,txt,sub) => `<div class="tl-step">${tlDot(s)}<div class="tl-content"><div class="tl-label">${lbl}</div><div class="tl-text">${txt||'Pendiente'}</div>${sub?`<div class="tl-date">${sub}</div>`:''}</div></div>`;
+
+  const st = os.estado;
+  document.getElementById('md-body').innerHTML = `
+    <div class="dg3">
+      ${di('Nº OS', `<span style="font-family:'JetBrains Mono',monospace;color:var(--orange)">${os.numero}</span>`)}
+      ${di('Tipo de mantenimiento', os.tipo)}
+      ${di('Estado', sbadge(st))}
+      ${di('Fecha de pedido', fd(os.fecha_pedido))}
+      ${di('Plazo estimado', os.plazo || '—')}
+      ${di('Duración (hs)', os.duracion_hs || '—')}
+    </div>
+    <div class="dg">
+      ${di('Solicitante', os.solicitante)}
+      ${di('Área solicitante', os.area_solicitante)}
+      ${di('Área ejecutante', os.area_destino)}
+      ${di('Responsable MTTO', os.responsable || '—')}
+    </div>
+    ${os.km_actuales || os.proximo_servicio ? `<div class="dg">${di('Km actuales',os.km_actuales||'—')}${di('Próximo servicio',os.proximo_servicio||'—')}</div>` : ''}
+    <div class="desc-box"><strong style="font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);display:block;margin-bottom:6px;">Descripción del trabajo</strong>${escHtml(os.desc_trabajo)}</div>
+    ${os.trabajo_realizado ? `<div class="desc-box" style="border-left-color:var(--blue)"><strong style="font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);display:block;margin-bottom:6px;">Trabajo realizado</strong>${escHtml(os.trabajo_realizado)}</div>` : ''}
+    ${os.observaciones ? `<div class="desc-box" style="border-left-color:var(--warn)"><strong style="font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);display:block;margin-bottom:6px;">Observaciones</strong>${escHtml(os.observaciones)}</div>` : ''}
+    ${matsHtml ? `<div class="form-sec" style="margin-top:16px">Materiales utilizados</div>${matsHtml}` : ''}
+    ${moHtml ? `<div class="form-sec" style="margin-top:16px">Mano de obra</div>${moHtml}` : ''}
+    <div class="form-sec" style="margin-top:16px">Seguimiento de la OS</div>
+    <div class="timeline">
+      ${tlStep('done', 'Solicitud creada', `${os.solicitante} — ${os.area_solicitante}`, fd(os.fecha_pedido))}
+      ${tlStep(os.fecha_inicio?'done':'pending', 'Inicio de ejecución', os.fecha_inicio?`Inicio: ${fd(os.fecha_inicio)}`:'Sin fecha de inicio registrada', '')}
+      ${tlStep(os.trabajo_realizado?'done':'pending', 'Trabajo realizado', os.trabajo_realizado||'Pendiente', os.fecha_fin?`Finalizado: ${fd(os.fecha_fin)}`:'')}
+      ${tlStep(st==='Aprobada'?'done':st==='Finalizada'?'active':'pending', 'Aprobación y conformidad', st==='Aprobada'?'OS aprobada y cerrada correctamente.':st==='Finalizada'?'Pendiente de aprobación de responsable MTTO.':'Pendiente.', '')}
+    </div>
+    ${os.obs_final ? `<div class="desc-box" style="border-left-color:var(--green);margin-top:8px"><strong style="font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);display:block;margin-bottom:6px;">Observaciones de cierre</strong>${escHtml(os.obs_final)}</div>` : ''}`;
+
+  document.getElementById('modal-detail').classList.add('open');
+}
+
+// ════════════════════════════════════════════════════
+// PRINT
+// ════════════════════════════════════════════════════
+function printOS() {
+  const os = ordenes.find(o => o.id === detailId);
+  if (!os) return;
+  let matsHtml = '';
+  try {
+    const mats = JSON.parse(os.materiales || '[]');
+    mats.forEach(m => { matsHtml += `<tr><td>${m.cant}</td><td>${escHtml(m.desc)}</td></tr>`; });
+  } catch(e){}
+  let moHtml = '';
+  try {
+    const mos = JSON.parse(os.mano_obra || '[]');
+    mos.forEach(m => { moHtml += `<tr><td>${escHtml(m.nombre)}</td><td>${fd(m.fecha)}</td><td>${m.tiempo} hs</td></tr>`; });
+  } catch(e){}
+
+  const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>OS ${os.numero}</title>
+  <style>
+    body{font-family:Arial,sans-serif;font-size:11px;color:#1a1a1a;padding:20px;}
+    .header{display:flex;justify-content:space-between;align-items:center;border:2px solid #333;padding:10px 14px;margin-bottom:0;}
+    .header-code{text-align:right;font-size:10px;line-height:1.6;font-weight:bold;}
+    .title{font-size:16px;font-weight:bold;text-align:center;}
+    table.main{width:100%;border-collapse:collapse;margin-bottom:0;}
+    table.main td,table.main th{border:1px solid #555;padding:5px 8px;vertical-align:top;}
+    .section-title{background:#333;color:#fff;font-weight:bold;text-align:center;padding:4px;font-size:11px;}
+    .desc-area{min-height:60px;}
+    .work-area{min-height:80px;}
+    .sig-area{min-height:60px;}
+    .two-col{display:grid;grid-template-columns:1fr 1fr;gap:0;}
+    .label{font-weight:bold;font-size:9.5px;text-transform:uppercase;}
+  </style></head><body>
+  <table class="main">
+    <tr>
+      <td style="width:120px;text-align:center;font-weight:bold;font-size:18px;border-right:2px solid #333;">NIELSEN</td>
+      <td style="text-align:center"><span class="title">ORDEN DE SERVICIO</span></td>
+      <td style="width:140px;text-align:right"><b>R MTTO 010</b><br>Versión Nº01<br>18/03/25</td>
+    </tr>
+    <tr><td colspan="3"><span class="label">ORDEN DE SERVICIO Nº: </span><b style="font-size:13px">${os.numero}</b></td></tr>
+    <tr>
+      <td><span class="label">TIPO DE MANTENIMIENTO</span><br>${os.tipo||'—'}</td>
+      <td><span class="label">SOLICITANTE (Nombre y área):</span><br>${os.solicitante} — ${os.area_solicitante}</td>
+      <td><span class="label">FECHA DE PEDIDO:</span> ${fd(os.fecha_pedido)}<br><span class="label">PLAZO:</span> ${os.plazo||'—'}</td>
+    </tr>
+    <tr>
+      <td><span class="label">ÁREA EJECUTANTE:</span><br>${os.area_destino||'—'}</td>
+      <td><span class="label">RESPONSABLE (Nombre y área):</span><br>${os.responsable||'—'}</td>
+      <td><span class="label">FECHA INICIO:</span> ${fd(os.fecha_inicio)||'—'}<br><span class="label">FECHA FIN:</span> ${fd(os.fecha_fin)||'—'}<br><span class="label">DURACIÓN:</span> ${os.duracion_hs||'—'} hs</td>
+    </tr>
+    <tr><td colspan="3"><span class="label">PRÓXIMO SERVICIO:</span> ${os.proximo_servicio||'_________________________'} &nbsp;&nbsp;&nbsp; <span class="label">KILÓMETROS ACTUALES:</span> ${os.km_actuales||'________________________'}</td></tr>
+    <tr><td colspan="3" class="section-title">DESCRIPCIÓN DEL TRABAJO</td></tr>
+    <tr><td colspan="3" class="desc-area">${escHtml(os.desc_trabajo)}</td></tr>
+    <tr><td colspan="3" class="section-title">TRABAJO REALIZADO</td></tr>
+    <tr><td colspan="3" class="work-area">${escHtml(os.trabajo_realizado||'')}</td></tr>
+    <tr><td colspan="3" class="section-title">OBSERVACIONES</td></tr>
+    <tr><td colspan="3" style="min-height:40px">${escHtml(os.observaciones||'')}</td></tr>
+    <tr>
+      <td colspan="2" class="section-title">MATERIALES UTILIZADOS</td>
+      <td class="section-title">MANO DE OBRA</td>
+    </tr>
+    <tr>
+      <td colspan="2" style="padding:0;vertical-align:top">
+        <table style="width:100%;border-collapse:collapse">
+          <tr><th style="border:1px solid #555;padding:4px">Cantidad</th><th style="border:1px solid #555;padding:4px">Descripción</th></tr>
+          ${matsHtml || '<tr><td style="border:1px solid #aaa;height:20px"></td><td style="border:1px solid #aaa"></td></tr><tr><td style="border:1px solid #aaa;height:20px"></td><td style="border:1px solid #aaa"></td></tr><tr><td style="border:1px solid #aaa;height:20px"></td><td style="border:1px solid #aaa"></td></tr>'}
+        </table>
+      </td>
+      <td style="padding:0;vertical-align:top">
+        <table style="width:100%;border-collapse:collapse">
+          <tr><th style="border:1px solid #555;padding:4px">Nombre</th><th style="border:1px solid #555;padding:4px">Fecha</th><th style="border:1px solid #555;padding:4px">Tiempo</th></tr>
+          ${moHtml || '<tr><td style="border:1px solid #aaa;height:20px"></td><td style="border:1px solid #aaa"></td><td style="border:1px solid #aaa"></td></tr><tr><td style="border:1px solid #aaa;height:20px"></td><td style="border:1px solid #aaa"></td><td style="border:1px solid #aaa"></td></tr>'}
+        </table>
+      </td>
+    </tr>
+    <tr>
+      <td style="width:33%;min-height:70px"><span class="label">FIRMA Y ACLARACIÓN<br>CONFORMIDAD SERVICIO</span><div class="sig-area"></div></td>
+      <td style="width:33%"><span class="label">FIRMA Y ACLARACIÓN<br>EJECUTANTE</span><div class="sig-area"></div></td>
+      <td style="width:34%"><span class="label">FIRMA Y ACLARACIÓN<br>RESPONSABLE MTTO</span><div class="sig-area"></div></td>
+    </tr>
+  </table>
+  </body></html>`;
+
+  const w = window.open('', '_blank');
+  w.document.write(html);
+  w.document.close();
+  w.onload = () => w.print();
+}
+
+// ════════════════════════════════════════════════════
+// RENDER TABLE
+// ════════════════════════════════════════════════════
+function renderTable() {
+  const search = (document.getElementById('s-search')?.value || '').toLowerCase();
+  const fTipo = document.getElementById('s-tipo')?.value || '';
+  const fArea = document.getElementById('s-area')?.value || '';
+  const fEst = document.getElementById('s-estado')?.value || '';
+
+  const filtered = ordenes.filter(os => {
+    const txt = [os.numero, os.solicitante, os.area_solicitante, os.area_destino,
+                 os.responsable, os.desc_trabajo, os.tipo].join(' ').toLowerCase();
+    return (!search || txt.includes(search))
+        && (!fTipo || os.tipo === fTipo)
+        && (!fArea || os.area_solicitante === fArea || os.area_destino.startsWith(fArea))
+        && (!fEst || os.estado === fEst);
+  });
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const tbody = document.getElementById('main-tbody');
+  const empty = document.getElementById('main-empty');
+
+  if (!filtered.length) {
+    tbody.innerHTML = ''; empty.style.display = 'block'; return;
+  }
+  empty.style.display = 'none';
+
+  tbody.innerHTML = filtered.sort((a,b) => (b.fecha_pedido||'').localeCompare(a.fecha_pedido||'')).map(os => {
+    const overdue = isOverdue(os);
+    return `<tr class="clickable${overdue?' row-overdue':''}" onclick="openDetail('${os.id}')">
+      <td class="td-id">${overdue?'<span class="overdue-dot"></span>':''}${os.numero}</td>
+      <td class="td-date">${fd(os.fecha_pedido)}</td>
+      <td>${tbadge(os.tipo)}</td>
+      <td style="font-size:12px">${escHtml(os.solicitante)}<br><span style="font-size:10px;color:var(--muted)">${os.area_solicitante}</span></td>
+      <td style="font-size:12px;color:var(--subtle)">${os.area_destino}</td>
+      <td class="td-desc">${escHtml(os.desc_trabajo)}</td>
+      <td style="font-size:12px;color:var(--subtle)">${os.responsable||'—'}</td>
+      <td style="font-size:11px;color:${overdue?'var(--danger)':'var(--muted)'}">${os.plazo||'—'}</td>
+      <td>${sbadge(os.estado)}</td>
+      <td onclick="event.stopPropagation()" style="white-space:nowrap">
+        <button class="btn btn-ghost btn-sm" onclick="openEdit('${os.id}')">✏</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteOS('${os.id}')">✕</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════════════════
+// RENDER DASHBOARD
+// ════════════════════════════════════════════════════
+function renderDashboard() {
+  const total = ordenes.length;
+  const pend = ordenes.filter(o => o.estado === 'Pendiente').length;
+  const ejec = ordenes.filter(o => o.estado === 'En ejecución').length;
+  const fin = ordenes.filter(o => o.estado === 'Finalizada').length;
+  const apro = ordenes.filter(o => o.estado === 'Aprobada').length;
+  const closed = fin + apro;
+  const overdue = ordenes.filter(o => isOverdue(o)).length;
+  const rate = total ? Math.round(closed / total * 100) + '%' : '—';
+
+  const withDur = ordenes.filter(o => parseFloat(o.duracion_hs) > 0);
+  const avgTime = withDur.length
+    ? (withDur.reduce((s,o) => s + parseFloat(o.duracion_hs), 0) / withDur.length).toFixed(1) + ' hs'
+    : '—';
+
+  document.getElementById('d-total').textContent = total;
+  document.getElementById('d-pend').textContent = pend;
+  document.getElementById('d-ejec').textContent = ejec;
+  document.getElementById('d-closed').textContent = closed;
+  document.getElementById('d-overdue').textContent = overdue;
+  document.getElementById('d-rate').textContent = rate;
+  document.getElementById('d-avgtime').textContent = avgTime;
+
+  // Nav counts
+  document.getElementById('nc-all').textContent = total;
+  document.getElementById('nc-pend').textContent = pend;
+  document.getElementById('nc-ejec').textContent = ejec;
+  document.getElementById('nc-fin').textContent = fin;
+  document.getElementById('nc-apro').textContent = apro;
+
+  // Recent
+  const recent = [...ordenes].sort((a,b) => (b.fecha_pedido||'').localeCompare(a.fecha_pedido||'')).slice(0,8);
+  document.getElementById('d-recent').innerHTML = recent.map(os => `
+    <tr class="clickable" onclick="openDetail('${os.id}')">
+      <td class="td-id">${os.numero}</td>
+      <td class="td-date">${fd(os.fecha_pedido)}</td>
+      <td>${tbadge(os.tipo)}</td>
+      <td style="font-size:12px">${escHtml(os.solicitante)}<span style="font-size:10px;color:var(--muted);margin-left:6px">${os.area_solicitante}</span></td>
+      <td style="font-size:12px;color:var(--subtle)">${os.area_destino}</td>
+      <td class="td-desc">${escHtml(os.desc_trabajo)}</td>
+      <td style="font-size:11px;color:var(--muted)">${os.plazo||'—'}</td>
+      <td>${sbadge(os.estado)}</td>
+    </tr>`).join('') || '<tr><td colspan="8" class="empty"><div class="empty-icon">🔧</div><div class="empty-title">Sin órdenes registradas</div></td></tr>';
+
+  // Charts
+  const tipos = ['Preventivo','Correctivo','Rutinario','Expansión','Mejora'];
+  const tipoData = tipos.map(t => ordenes.filter(o => o.tipo === t).length);
+  const estados = ['Pendiente','En ejecución','Finalizada','Aprobada'];
+  const estData = estados.map(s => ordenes.filter(o => o.estado === s).length);
+
+  const areaCount = {};
+  ordenes.forEach(o => { areaCount[o.area_solicitante] = (areaCount[o.area_solicitante] || 0) + 1; });
+  const destCount = {};
+  ordenes.forEach(o => {
+    const d = (o.area_destino||'').split('—')[0].trim();
+    destCount[d] = (destCount[d] || 0) + 1;
+  });
+
+  const cfg = {
+    tipo: { type:'doughnut', labels: tipos, data: tipoData,
+      colors: ['rgba(74,158,255,.8)','rgba(239,68,68,.8)','rgba(168,85,247,.8)','rgba(34,197,94,.8)','rgba(245,158,11,.8)'] },
+    estado: { type:'pie', labels: estados, data: estData,
+      colors: ['rgba(245,158,11,.8)','rgba(74,158,255,.8)','rgba(168,85,247,.8)','rgba(34,197,94,.8)'] },
+    area: { type:'bar', labels: Object.keys(areaCount), data: Object.values(areaCount),
+      colors: ['rgba(232,93,37,.7)'] },
+    dest: { type:'bar', labels: Object.keys(destCount), data: Object.values(destCount),
+      colors: ['rgba(74,158,255,.7)'] }
+  };
+
+  Object.entries(cfg).forEach(([key, c]) => {
+    const ctx = document.getElementById('chart-' + key);
+    if (!ctx) return;
+    if (charts[key]) charts[key].destroy();
+    const isBar = c.type === 'bar';
+    charts[key] = new Chart(ctx, {
+      type: c.type,
+      data: {
+        labels: c.labels,
+        datasets: [{ data: c.data, backgroundColor: isBar ? c.colors[0] : c.colors,
+          borderWidth: 0, borderRadius: isBar ? 4 : 0 }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: isBar ? 'bottom' : 'right',
+          labels: { color: '#a89f8e', font: { size: 10, family: 'DM Sans' }, boxWidth: 10, padding: 10 } } },
+        scales: isBar ? {
+          x: { ticks: { color: '#7a6e5e', font: { size: 9 } }, grid: { color: 'rgba(52,47,32,.5)' } },
+          y: { ticks: { color: '#7a6e5e', font: { size: 9 } }, grid: { color: 'rgba(52,47,32,.5)' }, beginAtZero: true }
+        } : {}
+      }
+    });
+  });
+}
+
+// ════════════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════════════
+function isOverdue(os) {
+  if (os.estado === 'Finalizada' || os.estado === 'Aprobada') return false;
+  if (!os.fecha_pedido || !os.plazo) return false;
+  const days = parseInt(os.plazo);
+  if (isNaN(days)) return false;
+  const due = new Date(os.fecha_pedido);
+  due.setDate(due.getDate() + days);
+  return due < new Date();
+}
+function nextId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,5); }
+function fd(d) {
+  if (!d) return '—';
+  try {
+    const s = d.includes('T') ? d.split('T')[0] : d;
+    const [y,m,dd] = s.split('-');
+    return `${dd}/${m}/${y}`;
+  } catch(e) { return d; }
+}
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function tbadge(t) {
+  const m = {Preventivo:'prev',Correctivo:'corr',Rutinario:'rut',Expansión:'exp',Mejora:'mej'};
+  return `<span class="badge badge-${m[t]||'prev'}">${t||'—'}</span>`;
+}
+function sbadge(s) {
+  const m = {'Pendiente':'pend','En ejecución':'ejec','Finalizada':'fin','Aprobada':'apro'};
+  return `<span class="badge badge-${m[s]||'pend'}">${s||'Pendiente'}</span>`;
+}
+function filterStatus(s) {
+  document.getElementById('s-estado').value = s;
+  renderTable();
+}
+function refresh() { renderTable(); renderDashboard(); }
+
+// ════════════════════════════════════════════════════
+// CONFIG
+// ════════════════════════════════════════════════════
+function saveConfig() {
+  const url = document.getElementById('cfg-url').value.trim();
+  G_URL = url;
+  localStorage.setItem('nielsen_os_url', url);
+  document.getElementById('cfg-status').innerHTML = url
+    ? '<span style="color:var(--green)">✓ URL guardada. Recargá los datos para sincronizar.</span>'
+    : '<span style="color:var(--muted)">URL eliminada.</span>';
+  loadData();
+}
+async function testConnection() {
+  const url = document.getElementById('cfg-url').value.trim();
+  if (!url) { document.getElementById('cfg-status').innerHTML = '<span style="color:var(--danger)">Ingresá una URL primero.</span>'; return; }
+  document.getElementById('cfg-status').innerHTML = '<span style="color:var(--warn)">Probando conexión...</span>';
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+    document.getElementById('cfg-status').innerHTML = `<span style="color:var(--green)">✓ Conexión exitosa. ${Array.isArray(data) ? data.length + ' registros encontrados.' : 'Respuesta recibida.'}</span>`;
+  } catch(e) {
+    document.getElementById('cfg-status').innerHTML = `<span style="color:var(--danger)">✗ Error de conexión: ${e.message}</span>`;
+  }
+}
+function copyScript() {
+  const code = document.querySelector('.config-panel div[style*="white-space"]').textContent;
+  navigator.clipboard?.writeText(code).then(() => alert('Código copiado al portapapeles.'))
+    .catch(() => alert('No se pudo copiar automáticamente. Seleccioná el código manualmente.'));
+}
+
+// ════════════════════════════════════════════════════
+// SECTION NAV
+// ════════════════════════════════════════════════════
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('sec-'+id)?.classList.add('active');
+  const idx = ['dashboard','ordenes','ordenes','ordenes','ordenes','config'].indexOf(id);
+  document.querySelectorAll('.nav-btn')[idx >= 0 ? idx : 0]?.classList.add('active');
+}
+
+// ════════════════════════════════════════════════════
+// EXPORT CSV
+// ════════════════════════════════════════════════════
+function exportCSV() {
+  const hdr = ['ID','Nº OS','Fecha Pedido','Tipo','Solicitante','Área Solicitante','Responsable',
+    'Área Destino','Plazo','Fecha Inicio','Fecha Fin','Duración (hs)','Km Actuales',
+    'Descripción','Trabajo Realizado','Observaciones','Estado'];
+  const rows = ordenes.map(o => [
+    o.id, o.numero, o.fecha_pedido, o.tipo, o.solicitante, o.area_solicitante,
+    o.responsable, o.area_destino, o.plazo, o.fecha_inicio, o.fecha_fin, o.duracion_hs,
+    o.km_actuales, `"${(o.desc_trabajo||'').replace(/"/g,'""')}"`,
+    `"${(o.trabajo_realizado||'').replace(/"/g,'""')}"`,
+    `"${(o.observaciones||'').replace(/"/g,'""')}"`, o.estado
+  ]);
+  const csv = [hdr.join(';'), ...rows.map(r => r.join(';'))].join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' }));
+  a.download = 'Nielsen_OS_Mantenimiento.csv';
+  a.click();
+}
+
+// ════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════
+document.getElementById('cfg-url').value = G_URL;
+setTimeout(loadData, 200);
+</script>
+</body>
+</html>
